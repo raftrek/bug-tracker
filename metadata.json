@@ -1,0 +1,5 @@
+{
+  "name": "Jira Clone - Bug Tracker",
+  "description": "A modern, responsive bug and issue tracker application inspired by Jira. It features a drag-and-drop Kanban board, issue creation, and AI-powered summaries using the Gemini API to suggest next steps.",
+  "requestFramePermissions": []
+}

@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { Board } from '../components/Board';
 import { CreateIssueModal } from '../components/CreateIssueModal';
 import { AddIcon, KanbanIcon, ListIcon } from '../components/icons';
-import { ALL_TAGS } from '../constants';
+import { ALL_TAGS, ISSUE_TEMPLATES } from '../constants';
 import { Status, Priority, type Issue, type ColumnData, type Tag, type Comment } from '../types';
 import { ListView } from '../components/ListView';
 import { getProjectById, getProjectIssues, saveProjectIssues, canAccessProject } from '../services/projectService';
@@ -324,7 +324,7 @@ const ProjectBoardPage: React.FC = () => {
         onCreateIssue={handleCreateIssue}
         allIssues={issues}
         allTags={availableTags}
-        issueTemplates={[]}
+        issueTemplates={ISSUE_TEMPLATES}
       />
     </div>
   );

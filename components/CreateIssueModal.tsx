@@ -4,6 +4,7 @@ import { CloseIcon, UploadIcon } from './icons';
 import { DatePicker } from './DatePicker';
 import type { Issue, IssueTemplate, Priority, Tag, Attachment, IssueType } from '../types';
 import { Status, Priority as PriorityEnum, IssueType as IssueTypeEnum } from '../types';
+import { getAllTemplates, saveCustomTemplate } from '../services/templateService';
 
 interface CreateIssueModalProps {
   isOpen: boolean;
@@ -39,20 +40,29 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
   const [issueData, setIssueData] = useState(DEFAULT_ISSUE_STATE);
   const [selectedTemplate, setSelectedTemplate] = useState('');
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [templates, setTemplates] = useState<IssueTemplate[]>(issueTemplates || []);
+  const [newTemplateName, setNewTemplateName] = useState('');
+  const [templateMsg, setTemplateMsg] = useState<string>('');
 
   useEffect(() => {
     if (!isOpen) {
       setTimeout(() => {
         setIssueData(DEFAULT_ISSUE_STATE);
         setSelectedTemplate('');
+        setNewTemplateName('');
+        setTemplateMsg('');
       }, 300);
     }
   }, [isOpen]);
 
+  useEffect(() => {
+    setTemplates(getAllTemplates(issueTemplates || []));
+  }, [issueTemplates, isOpen]);
+
   const handleTemplateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const templateName = e.target.value;
     setSelectedTemplate(templateName);
-    const template = issueTemplates.find(t => t.name === templateName);
+    const template = templates.find(t => t.name === templateName);
     if (template) {
       setIssueData(prev => ({
         ...prev,
@@ -64,6 +74,46 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
       }));
     } else {
         setIssueData(DEFAULT_ISSUE_STATE);
+    }
+  };
+
+  const handleSaveTemplate = () => {
+    const name = newTemplateName.trim();
+    if (!name) {
+      setTemplateMsg('Template name is required.');
+      return;
+    }
+    // Prevent duplicate names
+    if (templates.some(t => t.name.toLowerCase() === name.toLowerCase())) {
+      setTemplateMsg('A template with this name already exists.');
+      return;
+    }
+    const template: IssueTemplate = {
+      name,
+      title: issueData.title || '',
+      type: issueData.type || IssueTypeEnum.TASK,
+      description: issueData.description || '',
+      priority: issueData.priority || PriorityEnum.MEDIUM,
+      tags: issueData.tags || [],
+    };
+    try {
+      saveCustomTemplate(template);
+      const merged = getAllTemplates(issueTemplates || []);
+      setTemplates(merged);
+      setTemplateMsg('Template saved.');
+      setSelectedTemplate(name);
+      // Apply the newly saved template immediately
+      setIssueData(prev => ({
+        ...prev,
+        title: template.title || '',
+        type: template.type || IssueTypeEnum.TASK,
+        description: template.description || '',
+        priority: template.priority || PriorityEnum.MEDIUM,
+        tags: template.tags || [],
+      }));
+      setTimeout(() => setTemplateMsg(''), 2000);
+    } catch (err) {
+      setTemplateMsg('Failed to save template.');
     }
   };
   
@@ -165,8 +215,28 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
                 className="block w-full text-sm bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-800 p-2"
             >
                 <option value="">Select a template...</option>
-                {issueTemplates.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
+                {templates.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
             </select>
+            <div className="mt-2 flex items-center gap-2">
+              <input
+                type="text"
+                placeholder="New template name"
+                value={newTemplateName}
+                onChange={(e) => setNewTemplateName(e.target.value)}
+                className="flex-1 text-sm bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-800 p-2"
+              />
+              <button
+                type="button"
+                onClick={handleSaveTemplate}
+                className="px-3 py-2 text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-md"
+                title="Save current form as a template"
+              >
+                Save as template
+              </button>
+            </div>
+            {templateMsg && (
+              <p className="mt-1 text-xs text-gray-600">{templateMsg}</p>
+            )}
           </div>
           <div>
             <label htmlFor="title" className="text-sm font-bold text-gray-600 mb-1 block">Title</label>

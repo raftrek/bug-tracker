@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { TagInput } from './TagInput';
-import { CloseIcon, UploadIcon } from './icons';
+import { CloseIcon, UploadIcon, TrashIcon } from './icons';
 import { DatePicker } from './DatePicker';
 import type { Issue, IssueTemplate, Priority, Tag, Attachment, IssueType } from '../types';
 import { Status, Priority as PriorityEnum, IssueType as IssueTypeEnum } from '../types';
-import { getAllTemplates, saveCustomTemplate } from '../services/templateService';
+import { getAllTemplates, saveCustomTemplate, deleteCustomTemplate } from '../services/templateService';
 
 interface CreateIssueModalProps {
   isOpen: boolean;
@@ -43,6 +43,8 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
   const [templates, setTemplates] = useState<IssueTemplate[]>(issueTemplates || []);
   const [newTemplateName, setNewTemplateName] = useState('');
   const [templateMsg, setTemplateMsg] = useState<string>('');
+
+  const baseTemplateNames = useMemo(() => new Set((issueTemplates || []).map(t => t.name)), [issueTemplates]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -128,6 +130,29 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
   const handleTagsChange = (tags: Tag[]) => {
     setIssueData(prev => ({ ...prev, tags }));
   };
+
+  const handleDeleteTemplate = () => {
+    if (!selectedTemplate) return;
+    if (baseTemplateNames.has(selectedTemplate)) {
+      setTemplateMsg('Cannot delete base template.');
+      setTimeout(() => setTemplateMsg(''), 2000);
+      return;
+    }
+    const ok = window.confirm(`Delete template "${selectedTemplate}"?`);
+    if (!ok) return;
+    try {
+      deleteCustomTemplate(selectedTemplate);
+      const merged = getAllTemplates(issueTemplates || []);
+      setTemplates(merged);
+      setSelectedTemplate('');
+      setTemplateMsg('Template deleted.');
+      setIssueData(DEFAULT_ISSUE_STATE);
+      setTimeout(() => setTemplateMsg(''), 2000);
+    } catch (err) {
+      setTemplateMsg('Failed to delete template.');
+      setTimeout(() => setTemplateMsg(''), 2000);
+    }
+  };
   
   const handleDependencyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedOptions = Array.from(e.target.selectedOptions, (option: HTMLOptionElement) => option.value);
@@ -209,14 +234,27 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
         <form onSubmit={handleSubmit} id="create-issue-form" className="p-6 space-y-4 overflow-y-auto">
           <div>
             <label className="text-sm font-bold text-gray-600 mb-1 block">Template</label>
-            <select
-                value={selectedTemplate}
-                onChange={handleTemplateChange}
-                className="block w-full text-sm bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-800 p-2"
-            >
-                <option value="">Select a template...</option>
-                {templates.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
-            </select>
+            <div className="flex items-center gap-2">
+              <select
+                  value={selectedTemplate}
+                  onChange={handleTemplateChange}
+                  className="flex-1 block w-full text-sm bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-800 p-2"
+              >
+                  <option value="">Select a template...</option>
+                  {templates.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
+              </select>
+              {selectedTemplate && !baseTemplateNames.has(selectedTemplate) && (
+                <button
+                  type="button"
+                  onClick={handleDeleteTemplate}
+                  className="p-2 rounded-md text-gray-500 hover:text-red-600 hover:bg-red-50"
+                  title="Delete selected template"
+                  aria-label="Delete selected template"
+                >
+                  <TrashIcon className="w-5 h-5" />
+                </button>
+              )}
+            </div>
             <div className="mt-2 flex items-center gap-2">
               <input
                 type="text"

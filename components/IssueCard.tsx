@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import type { Issue, Comment, Tag } from '../types';
 import { Priority, Status } from '../types';
 import { generateIssueSummary } from '../services/geminiService';
-import { BrainCircuitIcon, SendIcon, CloseIcon, LockIcon, LinkIcon, PencilIcon, FileTextIcon, ImageIcon, TrashIcon } from './icons';
+import { BrainCircuitIcon, SendIcon, CloseIcon, LockIcon, LinkIcon, PencilIcon, FileTextIcon, ImageIcon, TrashIcon, MaximizeIcon, MinimizeIcon } from './icons';
 import { TagInput } from './TagInput';
 import { DatePicker } from './DatePicker';
 
@@ -34,6 +34,7 @@ const PriorityIndicator: React.FC<{ priority: Priority }> = ({ priority }) => {
 
 export const IssueCard: React.FC<IssueCardProps> = ({ issue, onAddComment, onEditComment, onDeleteComment, onUpdateIssue, allIssues, allTags }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [editFormData, setEditFormData] = useState(issue);
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [summary, setSummary] = useState('');
@@ -132,6 +133,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({ issue, onAddComment, onEdi
   const handleCancelEdit = () => {
     setEditFormData(issue);
     setIsEditing(false);
+    setIsExpanded(false);
   };
   
   const handleStartEditComment = (comment: Comment) => {
@@ -172,11 +174,11 @@ export const IssueCard: React.FC<IssueCardProps> = ({ issue, onAddComment, onEdi
   ].filter(Boolean).join(' | ');
 
   if (isEditing) {
-    return (
-      <div className="bg-white rounded-lg p-4 shadow-md border-l-4 border-primary-600 space-y-3">
+    const editForm = (
+      <>
         <div>
           <label className="text-xs font-bold text-gray-600">Title</label>
-          <input 
+          <input
             type="text"
             value={editFormData.title}
             onChange={(e) => handleEditChange('title', e.target.value)}
@@ -193,76 +195,114 @@ export const IssueCard: React.FC<IssueCardProps> = ({ issue, onAddComment, onEdi
           />
         </div>
         <div className="grid grid-cols-2 gap-3">
-            <div>
-                <label className="text-xs font-bold text-gray-600">Priority</label>
-                <select
-                    value={editFormData.priority}
-                    onChange={(e) => handleEditChange('priority', e.target.value as Priority)}
-                    className="mt-1 block w-full pl-2 pr-8 py-1 text-sm bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-800"
-                >
-                    {Object.values(Priority).map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
-            </div>
-            <div>
-                <label className="text-xs font-bold text-gray-600">Assignee</label>
-                <input 
-                    type="text"
-                    value={editFormData.assignee.name}
-                    onChange={(e) => handleAssigneeChange(e.target.value)}
-                    className="mt-1 block w-full px-2 py-1 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-sm text-neutral-800"
-                />
-            </div>
-            <div>
-              <label className="text-xs font-bold text-gray-600">Start Date</label>
-              <DatePicker
-                  value={editFormData.startDate}
-                  onChange={(date) => handleEditChange('startDate', date)}
-                  className="mt-1 block w-full px-2 py-1 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-sm text-neutral-800 pr-10"
-              />
-            </div>
-            <div>
-              <label className="text-xs font-bold text-gray-600">End Date</label>
-              <DatePicker
-                  value={editFormData.endDate}
-                  onChange={(date) => handleEditChange('endDate', date)}
-                  className="mt-1 block w-full px-2 py-1 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-sm text-neutral-800 pr-10"
-              />
-            </div>
-        </div>
-        <div>
-            <label className="text-xs font-bold text-gray-600">Tags</label>
-            <TagInput
-                allTags={allTags}
-                selectedTags={editFormData.tags || []}
-                onChange={handleTagsChange}
-            />
-        </div>
-        <div>
-            <div className="flex justify-between items-center mb-1">
-                <label className="text-xs font-bold text-gray-600">Dependencies</label>
-                <button
-                    type="button"
-                    onClick={() => setEditFormData(prev => ({ ...prev, dependencies: [] }))}
-                    className="text-xs font-medium text-primary-600 hover:underline focus:outline-none"
-                    aria-label="Clear all dependencies"
-                >
-                    Clear
-                </button>
-            </div>
+          <div>
+            <label className="text-xs font-bold text-gray-600">Priority</label>
             <select
-              multiple
-              value={editFormData.dependencies || []}
-              onChange={handleDependencyChange}
-              className="block w-full h-24 text-sm bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-800"
+              value={editFormData.priority}
+              onChange={(e) => handleEditChange('priority', e.target.value as Priority)}
+              className="mt-1 block w-full pl-2 pr-8 py-1 text-sm bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-800"
             >
-              {availableDependencies.map(dep => (
-                <option key={dep.id} value={dep.id}>{dep.id}: {dep.title}</option>
-              ))}
+              {Object.values(Priority).map(p => <option key={p} value={p}>{p}</option>)}
             </select>
+          </div>
+          <div>
+            <label className="text-xs font-bold text-gray-600">Assignee</label>
+            <input
+              type="text"
+              value={editFormData.assignee.name}
+              onChange={(e) => handleAssigneeChange(e.target.value)}
+              className="mt-1 block w-full px-2 py-1 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-sm text-neutral-800"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-gray-600">Start Date</label>
+            <DatePicker
+              value={editFormData.startDate}
+              onChange={(date) => handleEditChange('startDate', date)}
+              className="mt-1 block w-full px-2 py-1 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-sm text-neutral-800 pr-10"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-bold text-gray-600">End Date</label>
+            <DatePicker
+              value={editFormData.endDate}
+              onChange={(date) => handleEditChange('endDate', date)}
+              className="mt-1 block w-full px-2 py-1 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-sm text-neutral-800 pr-10"
+            />
+          </div>
         </div>
+        <div>
+          <label className="text-xs font-bold text-gray-600">Tags</label>
+          <TagInput
+            allTags={allTags}
+            selectedTags={editFormData.tags || []}
+            onChange={handleTagsChange}
+          />
+        </div>
+        <div>
+          <div className="flex justify-between items-center mb-1">
+            <label className="text-xs font-bold text-gray-600">Dependencies</label>
+            <button
+              type="button"
+              onClick={() => setEditFormData(prev => ({ ...prev, dependencies: [] }))}
+              className="text-xs font-medium text-primary-600 hover:underline focus:outline-none"
+              aria-label="Clear all dependencies"
+            >
+              Clear
+            </button>
+          </div>
+          <select
+            multiple
+            value={editFormData.dependencies || []}
+            onChange={handleDependencyChange}
+            className="block w-full h-24 text-sm bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-800"
+          >
+            {availableDependencies.map(dep => (
+              <option key={dep.id} value={dep.id}>{dep.id}: {dep.title}</option>
+            ))}
+          </select>
+        </div>
+      </>
+    );
+
+    if (isExpanded) {
+      return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-center items-center p-4" onClick={() => setIsExpanded(false)}>
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <header className="flex justify-between items-center p-4 border-b">
+              <h2 className="text-xl font-bold text-neutral-800">Edit Issue</h2>
+              <button onClick={() => setIsExpanded(false)} className="text-gray-500 hover:text-gray-800" title="Minimize">
+                <MinimizeIcon className="w-6 h-6" />
+              </button>
+            </header>
+            <div className="p-6 space-y-4 overflow-y-auto">
+              {editForm}
+            </div>
+            <footer className="flex justify-end space-x-2 p-4 border-t bg-gray-50 mt-auto">
+              <button onClick={handleCancelEdit} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md">Cancel</button>
+              <button onClick={handleSaveEdit} className="px-4 py-2 text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-md">Save</button>
+            </footer>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="bg-white rounded-lg p-4 shadow-md border-l-4 border-primary-600 space-y-3">
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => setIsExpanded(true)}
+            className="p-1.5 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-600 transition-colors"
+            title="Expand"
+          >
+            <MaximizeIcon className="w-5 h-5" />
+          </button>
+        </div>
+        {editForm}
         <div className="flex justify-end space-x-2 pt-2">
-            <button onClick={handleCancelEdit} className="px-3 py-1 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md">Cancel</button>
-            <button onClick={handleSaveEdit} className="px-3 py-1 text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-md">Save</button>
+          <button onClick={handleCancelEdit} className="px-3 py-1 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md">Cancel</button>
+          <button onClick={handleSaveEdit} className="px-3 py-1 text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-md">Save</button>
         </div>
       </div>
     );
@@ -278,7 +318,13 @@ export const IssueCard: React.FC<IssueCardProps> = ({ issue, onAddComment, onEdi
         <h3 className="font-bold text-neutral-800 mb-2 pr-2">{issue.title}</h3>
         <span className="text-sm text-gray-500 font-mono">{issue.id}</span>
       </div>
-      <p className="text-sm text-neutral-600 mb-4">{issue.description}</p>
+      <p
+        className="text-sm text-neutral-600 mb-4"
+        style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
+        title={issue.description}
+      >
+        {issue.description}
+      </p>
       
       {issue.tags && issue.tags.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-4">

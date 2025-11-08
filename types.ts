@@ -81,3 +81,27 @@ export type SortConfig = {
   key: keyof Issue;
   direction: 'ascending' | 'descending';
 } | null;
+
+// Project management types
+export enum ProjectStatus {
+  ACTIVE = 'Active',
+  PAUSED = 'Paused',
+  ARCHIVED = 'Archived',
+}
+
+export interface ProjectConfig {
+  // Flexible configuration options per project
+  [key: string]: unknown;
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  description?: string;
+  status: ProjectStatus;
+  requiresAuth?: boolean;
+  createdAt: string;
+  updatedAt?: string;
+  attachments?: Attachment[];
+  config?: ProjectConfig;
+}

@@ -1,20 +1,61 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Jira Clone - Bug Tracker
 
-# Run and deploy your AI Studio app
+This project is a Jira-like bug tracker application built with React. It allows users to manage issues through a Kanban board or a list view, create new issues, filter existing issues, and add comments.
 
-This contains everything you need to run your app locally.
+## Features
 
-View your app in AI Studio: https://ai.studio/apps/drive/1ZodwXehwjoN8A8GUCIcpiGgo1Zj0kOwf
+*   **Kanban Board View**: Visualize issues across different statuses (To Do, In Progress, Ready for Test, Done).
+*   **List View**: See a detailed list of all issues.
+*   **Issue Creation**: Easily create new issues with details like title, description, priority, assignee, and tags.
+*   **Issue Management**: Update issue details, move issues between different statuses.
+*   **Commenting System**: Add, edit, and delete comments on issues.
+*   **Filtering**: Filter issues by priority, assignee, and tags.
+*   **Responsive Design**: Built with Tailwind CSS for a modern and responsive user interface.
 
-## Run Locally
+## Technologies Used
 
-**Prerequisites:**  Node.js
+*   **React**: Frontend library for building user interfaces.
+*   **TypeScript**: Strongly typed superset of JavaScript.
+*   **Tailwind CSS**: A utility-first CSS framework for rapid UI development.
+*   **Vite**: Fast development build tool.
 
+## Getting Started
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+### Prerequisites
+
+Make sure you have Node.js installed on your machine.
+
+### Installation
+
+1.  Clone the repository:
+    ```bash
+    git clone https://github.com/your-username/jira-clone-bug-tracker.git
+    ```
+2.  Navigate to the project directory:
+    ```bash
+    cd jira-clone-bug-tracker
+    ```
+3.  Install dependencies:
+    ```bash
+    npm install
+    ```
+
+### Running the Application
+
+To start the development server:
+
+```bash
+npm run dev
+```
+
+Open your browser and visit `http://localhost:5173` (or the port indicated in your terminal).
+
+### Building for Production
+
+To build the application for production:
+
+```bash
+npm run build
+```
+
+This will create a `dist` directory with the production-ready build.

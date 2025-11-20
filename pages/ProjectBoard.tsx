@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { Board } from '../components/Board';
 import { CreateIssueModal } from '../components/CreateIssueModal';
 import { AddIcon, KanbanIcon, ListIcon } from '../components/icons';
+import { ThemeToggle } from '../components/ThemeToggle';
 import { ALL_TAGS, ISSUE_TEMPLATES } from '../constants';
 import { Status, Priority, type Issue, type ColumnData, type Tag, type Comment } from '../types';
 import { ListView } from '../components/ListView';
@@ -88,7 +89,7 @@ const ProjectBoardPage: React.FC = () => {
       return updated;
     });
   }, [availableTags, persist]);
-  
+
   const handleAddComment = useCallback((issueId: string, commentText: string) => {
     const newComment: Comment = {
       id: `comment-${Date.now()}`,
@@ -223,15 +224,16 @@ const ProjectBoardPage: React.FC = () => {
   }
 
   return (
-    <div className="bg-neutral-100 min-h-screen text-neutral-800 font-sans">
-      <header className="bg-white shadow-sm p-4 sticky top-0 z-20">
+    <div className="bg-neutral-50 dark:bg-neutral-900 min-h-screen text-neutral-900 dark:text-neutral-100 font-sans transition-colors duration-200">
+      <header className="bg-white dark:bg-neutral-800 shadow-sm p-4 sticky top-0 z-20 border-b border-neutral-200 dark:border-neutral-700">
         <div className="container mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-primary-600">{projectName}</h1>
-          <div className="flex items-center gap-2">
-            <Link to="/projects" className="px-4 py-2 rounded bg-neutral-200 text-neutral-800 hover:bg-neutral-300">Back to Projects</Link>
+          <h1 className="text-2xl font-bold text-primary-600 dark:text-primary-400">{projectName}</h1>
+          <div className="flex items-center gap-3">
+            <ThemeToggle />
+            <Link to="/projects" className="px-4 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600 transition-colors text-sm font-medium">Back to Projects</Link>
             <button
               onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-2 bg-primary-500 text-white font-semibold px-4 py-2 rounded-lg hover:bg-primary-600 transition-colors"
+              className="flex items-center gap-2 bg-primary-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors shadow-sm text-sm"
             >
               <AddIcon />
               Create Issue
@@ -240,39 +242,39 @@ const ProjectBoardPage: React.FC = () => {
         </div>
       </header>
       <main className="p-4 sm:p-6 container mx-auto">
-        <div className="bg-white rounded-lg shadow p-4 mb-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
+        <div className="bg-white dark:bg-neutral-800 rounded-xl shadow-sm border border-neutral-200 dark:border-neutral-700 p-4 mb-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
           <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
-            <span className="font-semibold text-gray-700">Filter by:</span>
+            <span className="font-semibold text-neutral-700 dark:text-neutral-300">Filter by:</span>
             <div className="flex items-center gap-2">
-              <label htmlFor="priority-filter" className="text-sm font-medium text-gray-500">Priority</label>
+              <label htmlFor="priority-filter" className="text-sm font-medium text-neutral-500 dark:text-neutral-400">Priority</label>
               <select
                 id="priority-filter"
                 value={priorityFilter}
                 onChange={(e) => setPriorityFilter(e.target.value)}
-                className="text-sm bg-gray-50 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 p-1.5"
+                className="text-sm bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent p-2 text-neutral-900 dark:text-neutral-100"
               >
                 <option value="All">All</option>
                 {Object.values(Priority).map(p => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
             <div className="flex items-center gap-2">
-              <label htmlFor="assignee-filter" className="text-sm font-medium text-gray-500">Assignee</label>
+              <label htmlFor="assignee-filter" className="text-sm font-medium text-neutral-500 dark:text-neutral-400">Assignee</label>
               <select
                 id="assignee-filter"
                 value={assigneeFilter}
                 onChange={(e) => setAssigneeFilter(e.target.value)}
-                className="text-sm bg-gray-50 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 p-1.5"
+                className="text-sm bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent p-2 text-neutral-900 dark:text-neutral-100"
               >
                 {uniqueAssignees.map(name => <option key={name} value={name}>{name}</option>)}
               </select>
             </div>
             <div className="flex items-center gap-2">
-              <label htmlFor="tag-filter" className="text-sm font-medium text-gray-500">Tag</label>
+              <label htmlFor="tag-filter" className="text-sm font-medium text-neutral-500 dark:text-neutral-400">Tag</label>
               <select
                 id="tag-filter"
                 value={tagFilter}
                 onChange={(e) => setTagFilter(e.target.value)}
-                className="text-sm bg-gray-50 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500 p-1.5"
+                className="text-sm bg-neutral-50 dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent p-2 text-neutral-900 dark:text-neutral-100"
               >
                 <option value="All">All</option>
                 {availableTags.map(tag => <option key={tag.name} value={tag.name}>{tag.name}</option>)}
@@ -280,17 +282,17 @@ const ProjectBoardPage: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="font-semibold text-gray-700">View:</span>
+            <span className="font-semibold text-neutral-700 dark:text-neutral-300">View:</span>
             <button
               onClick={() => setViewMode('kanban')}
-              className={`p-2 rounded-md transition-colors ${viewMode === 'kanban' ? 'bg-primary-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}
+              className={`p-2 rounded-lg transition-colors ${viewMode === 'kanban' ? 'bg-primary-600 text-white' : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-600'}`}
               title="Kanban View"
             >
               <KanbanIcon className="w-5 h-5" />
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`p-2 rounded-md transition-colors ${viewMode === 'list' ? 'bg-primary-500 text-white' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'}`}
+              className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-primary-600 text-white' : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-600'}`}
               title="List View"
             >
               <ListIcon className="w-5 h-5" />
@@ -299,7 +301,7 @@ const ProjectBoardPage: React.FC = () => {
         </div>
 
         {viewMode === 'kanban' ? (
-          <Board 
+          <Board
             boardData={boardData}
             onMoveIssue={handleMoveIssue}
             onAddComment={handleAddComment}

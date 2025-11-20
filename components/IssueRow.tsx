@@ -27,14 +27,14 @@ const PriorityIndicator: React.FC<{ priority: Priority }> = ({ priority }) => {
 };
 
 const StatusPill: React.FC<{ status: Status }> = ({ status }) => {
-    const statusStyles: { [key in Status]: { text: string; color: string } } = {
-        [Status.TODO]: { text: 'To Do', color: 'bg-gray-200 text-gray-800' },
-        [Status.IN_PROGRESS]: { text: 'In Progress', color: 'bg-blue-200 text-blue-800' },
-        [Status.READY_FOR_TEST]: { text: 'Ready for Test', color: 'bg-purple-200 text-purple-800' },
-        [Status.DONE]: { text: 'Done', color: 'bg-green-200 text-green-800' },
-    };
-    const style = statusStyles[status];
-    return <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${style.color}`}>{style.text}</span>;
+  const statusStyles: { [key in Status]: { text: string; color: string } } = {
+    [Status.TODO]: { text: 'To Do', color: 'bg-neutral-200 text-neutral-800 dark:bg-neutral-700 dark:text-neutral-300' },
+    [Status.IN_PROGRESS]: { text: 'In Progress', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' },
+    [Status.READY_FOR_TEST]: { text: 'Ready for Test', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300' },
+    [Status.DONE]: { text: 'Done', color: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' },
+  };
+  const style = statusStyles[status];
+  return <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${style.color}`}>{style.text}</span>;
 }
 
 export const IssueRow: React.FC<IssueRowProps> = ({ issue, onUpdateIssue, allIssues, allTags }) => {
@@ -56,15 +56,15 @@ export const IssueRow: React.FC<IssueRowProps> = ({ issue, onUpdateIssue, allIss
   const handleTagsChange = (tags: Tag[]) => {
     setEditFormData(prev => ({ ...prev, tags }));
   };
-  
+
   const handleSaveEdit = () => {
     const { id, createdAt, updatedAt, comments, ...updatedValues } = editFormData;
     const finalValues = {
-        ...updatedValues,
-        assignee: {
-            name: updatedValues.assignee.name,
-            avatarUrl: `https://i.pravatar.cc/150?u=${updatedValues.assignee.name.replace(/\s/g, '')}`
-        }
+      ...updatedValues,
+      assignee: {
+        name: updatedValues.assignee.name,
+        avatarUrl: `https://i.pravatar.cc/150?u=${updatedValues.assignee.name.replace(/\s/g, '')}`
+      }
     };
     onUpdateIssue(id, finalValues);
     setIsEditing(false);
@@ -79,7 +79,7 @@ export const IssueRow: React.FC<IssueRowProps> = ({ issue, onUpdateIssue, allIss
     setEditFormData(issue);
     setIsEditing(true);
   };
-  
+
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
     // FIX: Corrected typo `toLocaleDate sapiens` to `toLocaleDateString`.
@@ -88,86 +88,86 @@ export const IssueRow: React.FC<IssueRowProps> = ({ issue, onUpdateIssue, allIss
 
   if (isEditing) {
     return (
-      <tr className="bg-blue-50">
-        <td className="px-4 py-3 text-sm font-mono text-gray-500 whitespace-nowrap">{issue.id}</td>
+      <tr className="bg-blue-50 dark:bg-blue-900/20">
+        <td className="px-4 py-3 text-sm font-mono text-neutral-500 dark:text-neutral-400 whitespace-nowrap">{issue.id}</td>
         <td className="px-4 py-3 whitespace-nowrap" style={{ minWidth: '200px' }}>
-          <input 
+          <input
             type="text"
             value={editFormData.title}
             onChange={(e) => handleEditChange('title', e.target.value)}
-            className="w-full bg-white border border-gray-300 rounded-md shadow-sm p-1.5 text-sm"
+            className="w-full bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm p-1.5 text-sm text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
         </td>
         <td className="px-4 py-3 whitespace-nowrap">
-            <select
-                value={editFormData.status}
-                onChange={(e) => handleEditChange('status', e.target.value as Status)}
-                className="w-full bg-white border border-gray-300 rounded-md shadow-sm p-1.5 text-sm"
-            >
-                {Object.values(Status).map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
-            </select>
+          <select
+            value={editFormData.status}
+            onChange={(e) => handleEditChange('status', e.target.value as Status)}
+            className="w-full bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm p-1.5 text-sm text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            {Object.values(Status).map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+          </select>
         </td>
         <td className="px-4 py-3 whitespace-nowrap">
-            <select
-                value={editFormData.priority}
-                onChange={(e) => handleEditChange('priority', e.target.value as Priority)}
-                className="w-full bg-white border border-gray-300 rounded-md shadow-sm p-1.5 text-sm"
-            >
-                {Object.values(Priority).map(p => <option key={p} value={p}>{p}</option>)}
-            </select>
+          <select
+            value={editFormData.priority}
+            onChange={(e) => handleEditChange('priority', e.target.value as Priority)}
+            className="w-full bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm p-1.5 text-sm text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            {Object.values(Priority).map(p => <option key={p} value={p}>{p}</option>)}
+          </select>
         </td>
         <td className="px-4 py-3 whitespace-nowrap">
-            <input 
-                type="text"
-                value={editFormData.assignee.name}
-                onChange={(e) => handleAssigneeChange(e.target.value)}
-                className="w-full bg-white border border-gray-300 rounded-md shadow-sm p-1.5 text-sm"
-            />
+          <input
+            type="text"
+            value={editFormData.assignee.name}
+            onChange={(e) => handleAssigneeChange(e.target.value)}
+            className="w-full bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm p-1.5 text-sm text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          />
         </td>
         <td className="px-4 py-3" style={{ minWidth: '250px' }}>
-            <TagInput
-                allTags={allTags}
-                selectedTags={editFormData.tags || []}
-                onChange={handleTagsChange}
-            />
+          <TagInput
+            allTags={allTags}
+            selectedTags={editFormData.tags || []}
+            onChange={handleTagsChange}
+          />
         </td>
-        <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{formatDate(issue.updatedAt)}</td>
+        <td className="px-4 py-3 text-sm text-neutral-500 dark:text-neutral-400 whitespace-nowrap">{formatDate(issue.updatedAt)}</td>
         <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
-            <div className="flex items-center gap-2">
-                <button onClick={handleSaveEdit} className="px-2 py-1 text-xs font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-md">Save</button>
-                <button onClick={handleCancelEdit} className="px-2 py-1 text-xs font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md">Cancel</button>
-            </div>
+          <div className="flex items-center gap-2">
+            <button onClick={handleSaveEdit} className="px-2 py-1 text-xs font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-md">Save</button>
+            <button onClick={handleCancelEdit} className="px-2 py-1 text-xs font-medium text-neutral-700 dark:text-neutral-300 bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-300 dark:hover:bg-neutral-600 rounded-md">Cancel</button>
+          </div>
         </td>
       </tr>
     );
   }
 
   return (
-    <tr className="hover:bg-gray-50">
-      <td className="px-4 py-3 text-sm font-mono text-gray-500 whitespace-nowrap">{issue.id}</td>
-      <td className="px-4 py-3 text-sm font-medium text-gray-900 whitespace-nowrap">{issue.title}</td>
-      <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+    <tr className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors">
+      <td className="px-4 py-3 text-sm font-mono text-neutral-500 dark:text-neutral-400 whitespace-nowrap">{issue.id}</td>
+      <td className="px-4 py-3 text-sm font-medium text-neutral-900 dark:text-neutral-100 whitespace-nowrap">{issue.title}</td>
+      <td className="px-4 py-3 text-sm text-neutral-500 dark:text-neutral-400 whitespace-nowrap">
         <StatusPill status={issue.status} />
       </td>
-      <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+      <td className="px-4 py-3 text-sm text-neutral-500 dark:text-neutral-400 whitespace-nowrap">
         <PriorityIndicator priority={issue.priority} />
       </td>
-      <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+      <td className="px-4 py-3 text-sm text-neutral-500 dark:text-neutral-400 whitespace-nowrap">
         <div className="flex items-center gap-2">
-            <img src={issue.assignee.avatarUrl} alt={issue.assignee.name} className="w-6 h-6 rounded-full" />
-            <span>{issue.assignee.name}</span>
+          <img src={issue.assignee.avatarUrl} alt={issue.assignee.name} className="w-6 h-6 rounded-full" />
+          <span>{issue.assignee.name}</span>
         </div>
       </td>
       <td className="px-4 py-3 whitespace-nowrap">
         <div className="flex flex-wrap gap-1">
-            {issue.tags?.map(tag => (
-                <span key={tag.name} className={`px-2 py-0.5 rounded-full text-xs font-medium ${tag.color}`}>
-                    {tag.name}
-                </span>
-            ))}
+          {issue.tags?.map(tag => (
+            <span key={tag.name} className={`px-2 py-0.5 rounded-full text-xs font-medium ${tag.color}`}>
+              {tag.name}
+            </span>
+          ))}
         </div>
       </td>
-      <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{formatDate(issue.updatedAt)}</td>
+      <td className="px-4 py-3 text-sm text-neutral-500 dark:text-neutral-400 whitespace-nowrap">{formatDate(issue.updatedAt)}</td>
       <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
         <button onClick={handleStartEditing} className="text-primary-600 hover:text-primary-800 p-1">
           <PencilIcon className="w-5 h-5" />

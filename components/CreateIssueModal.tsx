@@ -16,17 +16,17 @@ interface CreateIssueModalProps {
 }
 
 const DEFAULT_ISSUE_STATE: Omit<Issue, 'id' | 'status' | 'updatedAt'> = {
-    title: '',
-    type: IssueTypeEnum.TASK,
-    description: '',
-    priority: PriorityEnum.MEDIUM,
-    assignee: { name: '', avatarUrl: '' },
-    startDate: '',
-    endDate: '',
-    comments: [],
-    dependencies: [],
-    tags: [],
-    attachments: [],
+  title: '',
+  type: IssueTypeEnum.TASK,
+  description: '',
+  priority: PriorityEnum.MEDIUM,
+  assignee: { name: '', avatarUrl: '' },
+  startDate: '',
+  endDate: '',
+  comments: [],
+  dependencies: [],
+  tags: [],
+  attachments: [],
 };
 
 export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
@@ -75,7 +75,7 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
         tags: template.tags || [],
       }));
     } else {
-        setIssueData(DEFAULT_ISSUE_STATE);
+      setIssueData(DEFAULT_ISSUE_STATE);
     }
   };
 
@@ -118,7 +118,7 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
       setTemplateMsg('Failed to save template.');
     }
   };
-  
+
   const handleChange = (field: keyof typeof issueData, value: any) => {
     setIssueData(prev => ({ ...prev, [field]: value }));
   };
@@ -126,7 +126,7 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
   const handleAssigneeChange = (value: string) => {
     setIssueData(prev => ({ ...prev, assignee: { ...prev.assignee, name: value } }));
   };
-  
+
   const handleTagsChange = (tags: Tag[]) => {
     setIssueData(prev => ({ ...prev, tags }));
   };
@@ -153,7 +153,7 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
       setTimeout(() => setTemplateMsg(''), 2000);
     }
   };
-  
+
   const handleDependencyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedOptions = Array.from(e.target.selectedOptions, (option: HTMLOptionElement) => option.value);
     setIssueData(prev => ({ ...prev, dependencies: selectedOptions }));
@@ -196,25 +196,25 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
   };
 
   const removeAttachment = (fileName: string) => {
-      setIssueData(prev => ({
-          ...prev,
-          attachments: prev.attachments?.filter(att => att.name !== fileName)
-      }))
+    setIssueData(prev => ({
+      ...prev,
+      attachments: prev.attachments?.filter(att => att.name !== fileName)
+    }))
   }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!issueData.title) return;
     const finalData = {
-        ...issueData,
-        assignee: {
-            name: issueData.assignee.name,
-            avatarUrl: `https://i.pravatar.cc/150?u=${issueData.assignee.name.replace(/\s/g, '')}`
-        }
+      ...issueData,
+      assignee: {
+        name: issueData.assignee.name,
+        avatarUrl: `https://i.pravatar.cc/150?u=${issueData.assignee.name.replace(/\s/g, '')}`
+      }
     };
     onCreateIssue(finalData);
   };
-  
+
   const availableDependencies = useMemo(() => {
     return allIssues.filter(i => i.status !== Status.DONE);
   }, [allIssues]);
@@ -223,10 +223,10 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-40 flex justify-center items-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
-        <header className="flex justify-between items-center p-4 border-b">
-          <h2 className="text-xl font-bold text-neutral-800">Create New Issue</h2>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 flex justify-center items-center p-4" onClick={onClose}>
+      <div className="bg-white dark:bg-neutral-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-neutral-200 dark:border-neutral-700" onClick={e => e.stopPropagation()}>
+        <header className="flex justify-between items-center p-4 border-b border-neutral-200 dark:border-neutral-700">
+          <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">Create New Issue</h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-800">
             <CloseIcon className="w-6 h-6" />
           </button>
@@ -236,12 +236,12 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
             <label className="text-sm font-bold text-gray-600 mb-1 block">Template</label>
             <div className="flex items-center gap-2">
               <select
-                  value={selectedTemplate}
-                  onChange={handleTemplateChange}
-                  className="flex-1 block w-full text-sm bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-800 p-2"
+                value={selectedTemplate}
+                onChange={handleTemplateChange}
+                className="flex-1 block w-full text-sm bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-900 dark:text-neutral-100 p-2"
               >
-                  <option value="">Select a template...</option>
-                  {templates.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
+                <option value="">Select a template...</option>
+                {templates.map(t => <option key={t.name} value={t.name}>{t.name}</option>)}
               </select>
               {selectedTemplate && !baseTemplateNames.has(selectedTemplate) && (
                 <button
@@ -261,7 +261,7 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
                 placeholder="New template name"
                 value={newTemplateName}
                 onChange={(e) => setNewTemplateName(e.target.value)}
-                className="flex-1 text-sm bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-800 p-2"
+                className="flex-1 text-sm bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-900 dark:text-neutral-100 p-2"
               />
               <button
                 type="button"
@@ -278,24 +278,24 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
           </div>
           <div>
             <label htmlFor="title" className="text-sm font-bold text-gray-600 mb-1 block">Title</label>
-            <input 
+            <input
               id="title"
               type="text"
               value={issueData.title}
               onChange={(e) => handleChange('title', e.target.value)}
               required
-              className="block w-full text-sm bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-800 p-2"
+              className="block w-full text-sm bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-900 dark:text-neutral-100 p-2"
             />
           </div>
           <div>
             <label htmlFor="type" className="text-sm font-bold text-gray-600 mb-1 block">Type</label>
             <select
-                id="type"
-                value={issueData.type}
-                onChange={(e) => handleChange('type', e.target.value as IssueType)}
-                className="block w-full text-sm bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-800 p-2"
+              id="type"
+              value={issueData.type}
+              onChange={(e) => handleChange('type', e.target.value as IssueType)}
+              className="block w-full text-sm bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-900 dark:text-neutral-100 p-2"
             >
-                {Object.values(IssueTypeEnum).map(t => <option key={t} value={t}>{t}</option>)}
+              {Object.values(IssueTypeEnum).map(t => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
           <div>
@@ -305,55 +305,55 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
               value={issueData.description}
               onChange={(e) => handleChange('description', e.target.value)}
               rows={5}
-              className="block w-full text-sm bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-800 p-2"
+              className="block w-full text-sm bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-900 dark:text-neutral-100 p-2"
             />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-                <label htmlFor="priority" className="text-sm font-bold text-gray-600 mb-1 block">Priority</label>
-                <select
-                    id="priority"
-                    value={issueData.priority}
-                    onChange={(e) => handleChange('priority', e.target.value as Priority)}
-                    className="block w-full text-sm bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-800 p-2"
-                >
-                    {Object.values(PriorityEnum).map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
+              <label htmlFor="priority" className="text-sm font-bold text-gray-600 mb-1 block">Priority</label>
+              <select
+                id="priority"
+                value={issueData.priority}
+                onChange={(e) => handleChange('priority', e.target.value as Priority)}
+                className="block w-full text-sm bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-900 dark:text-neutral-100 p-2"
+              >
+                {Object.values(PriorityEnum).map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
             </div>
             <div>
-                <label htmlFor="assignee" className="text-sm font-bold text-gray-600 mb-1 block">Assignee</label>
-                <input 
-                    id="assignee"
-                    type="text"
-                    value={issueData.assignee.name}
-                    onChange={(e) => handleAssigneeChange(e.target.value)}
-                    placeholder="Enter assignee name"
-                    className="block w-full text-sm bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-800 p-2"
-                />
+              <label htmlFor="assignee" className="text-sm font-bold text-gray-600 mb-1 block">Assignee</label>
+              <input
+                id="assignee"
+                type="text"
+                value={issueData.assignee.name}
+                onChange={(e) => handleAssigneeChange(e.target.value)}
+                placeholder="Enter assignee name"
+                className="block w-full text-sm bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-900 dark:text-neutral-100 p-2"
+              />
             </div>
             <div>
-                <label htmlFor="startDate" className="text-sm font-bold text-gray-600 mb-1 block">Start Date</label>
-                <DatePicker
-                    id="startDate"
-                    value={issueData.startDate}
-                    onChange={(date) => handleChange('startDate', date)}
-                />
+              <label htmlFor="startDate" className="text-sm font-bold text-gray-600 mb-1 block">Start Date</label>
+              <DatePicker
+                id="startDate"
+                value={issueData.startDate}
+                onChange={(date) => handleChange('startDate', date)}
+              />
             </div>
             <div>
-                <label htmlFor="endDate" className="text-sm font-bold text-gray-600 mb-1 block">End Date</label>
-                <DatePicker
-                    id="endDate"
-                    value={issueData.endDate}
-                    onChange={(date) => handleChange('endDate', date)}
-                />
+              <label htmlFor="endDate" className="text-sm font-bold text-gray-600 mb-1 block">End Date</label>
+              <DatePicker
+                id="endDate"
+                value={issueData.endDate}
+                onChange={(date) => handleChange('endDate', date)}
+              />
             </div>
           </div>
           <div>
             <label className="text-sm font-bold text-gray-600 mb-1 block">Tags</label>
             <TagInput
-                allTags={allTags}
-                selectedTags={issueData.tags || []}
-                onChange={handleTagsChange}
+              allTags={allTags}
+              selectedTags={issueData.tags || []}
+              onChange={handleTagsChange}
             />
           </div>
           <div>
@@ -363,7 +363,7 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
               multiple
               value={issueData.dependencies || []}
               onChange={handleDependencyChange}
-              className="block w-full h-24 text-sm bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-800 p-2"
+              className="block w-full h-24 text-sm bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-900 dark:text-neutral-100 p-2"
             >
               {availableDependencies.map(dep => (
                 <option key={dep.id} value={dep.id}>{dep.id}: {dep.title}</option>
@@ -371,46 +371,45 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
             </select>
           </div>
           <div>
-             <label className="text-sm font-bold text-gray-600 mb-1 block">Attachments</label>
-             <div
-                 onDragOver={handleDragOver}
-                 onDragLeave={handleDragLeave}
-                 onDrop={handleDrop}
-                 className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md transition-colors ${
-                    isDraggingOver ? 'border-primary-500 bg-blue-50' : 'border-gray-300'
-                 }`}
-              >
-                 <div className="space-y-1 text-center">
-                     <UploadIcon className="mx-auto h-12 w-12 text-gray-400" />
-                     <div className="flex text-sm text-gray-600">
-                         <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500">
-                             <span>Upload files</span>
-                             <input id="file-upload" name="file-upload" type="file" multiple className="sr-only" onChange={handleFileChange} />
-                         </label>
-                         <p className="pl-1">or drag and drop</p>
-                     </div>
-                     <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
-                 </div>
-             </div>
-             {issueData.attachments && issueData.attachments.length > 0 && (
-                <div className="mt-2 space-y-2">
-                    {issueData.attachments.map(file => (
-                        <div key={file.name} className="flex items-center justify-between bg-gray-50 p-2 rounded-md">
-                            <span className="text-sm text-gray-700 truncate">{file.name}</span>
-                            <button type="button" onClick={() => removeAttachment(file.name)} className="text-red-500 hover:text-red-700">
-                                <CloseIcon className="w-4 h-4" />
-                            </button>
-                        </div>
-                    ))}
+            <label className="text-sm font-bold text-gray-600 mb-1 block">Attachments</label>
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-md transition-colors ${isDraggingOver ? 'border-primary-500 bg-blue-50 dark:bg-blue-900/20' : 'border-neutral-300 dark:border-neutral-600'
+                }`}
+            >
+              <div className="space-y-1 text-center">
+                <UploadIcon className="mx-auto h-12 w-12 text-gray-400" />
+                <div className="flex text-sm text-neutral-600 dark:text-neutral-400">
+                  <label htmlFor="file-upload" className="relative cursor-pointer bg-transparent rounded-md font-medium text-primary-600 dark:text-primary-400 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary-500">
+                    <span>Upload files</span>
+                    <input id="file-upload" name="file-upload" type="file" multiple className="sr-only" onChange={handleFileChange} />
+                  </label>
+                  <p className="pl-1">or drag and drop</p>
                 </div>
-             )}
+                <p className="text-xs text-gray-500">PNG, JPG, GIF up to 10MB</p>
+              </div>
+            </div>
+            {issueData.attachments && issueData.attachments.length > 0 && (
+              <div className="mt-2 space-y-2">
+                {issueData.attachments.map(file => (
+                  <div key={file.name} className="flex items-center justify-between bg-neutral-50 dark:bg-neutral-900/50 p-2 rounded-md border border-neutral-100 dark:border-neutral-700">
+                    <span className="text-sm text-neutral-700 dark:text-neutral-300 truncate">{file.name}</span>
+                    <button type="button" onClick={() => removeAttachment(file.name)} className="text-red-500 hover:text-red-700">
+                      <CloseIcon className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </form>
-        <footer className="flex justify-end space-x-3 p-4 border-t bg-gray-50 mt-auto">
-          <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md">Cancel</button>
+        <footer className="flex justify-end space-x-3 p-4 border-t border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900/50 mt-auto rounded-b-xl">
+          <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300 bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-300 dark:hover:bg-neutral-600 rounded-md transition-colors">Cancel</button>
           <button type="submit" form="create-issue-form" className="px-4 py-2 text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-md disabled:opacity-50" disabled={!issueData.title}>Create Issue</button>
         </footer>
       </div>
-    </div>
+    </div >
   );
 };

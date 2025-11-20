@@ -22,7 +22,7 @@ export const ListView: React.FC<ListViewProps> = ({ issues, onUpdateIssue, allIs
 
         if (aValue === undefined || aValue === null) return 1;
         if (bValue === undefined || bValue === null) return -1;
-        
+
         if (aValue < bValue) {
           return sortConfig.direction === 'ascending' ? -1 : 1;
         }
@@ -47,38 +47,38 @@ export const ListView: React.FC<ListViewProps> = ({ issues, onUpdateIssue, allIs
     const isSorted = sortConfig?.key === sortKey;
     const direction = sortConfig?.direction;
     return (
-      <th 
-        className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none"
+      <th
+        className="px-4 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider cursor-pointer select-none hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors"
         onClick={() => requestSort(sortKey)}
       >
         <div className="flex items-center gap-2">
-            {children}
-            {isSorted && (
-                direction === 'ascending' ? <ArrowUpIcon className="w-4 h-4" /> : <ArrowDownIcon className="w-4 h-4" />
-            )}
+          {children}
+          {isSorted && (
+            direction === 'ascending' ? <ArrowUpIcon className="w-4 h-4" /> : <ArrowDownIcon className="w-4 h-4" />
+          )}
         </div>
       </th>
     );
   };
 
   return (
-    <div className="bg-white rounded-lg shadow overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
+    <div className="bg-white dark:bg-neutral-800 rounded-xl shadow-sm border border-neutral-200 dark:border-neutral-700 overflow-hidden">
+      <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700">
+        <thead className="bg-neutral-50 dark:bg-neutral-900/50">
           <tr>
             <SortableHeader sortKey="id">ID</SortableHeader>
             <SortableHeader sortKey="title">Title</SortableHeader>
             <SortableHeader sortKey="status">Status</SortableHeader>
             <SortableHeader sortKey="priority">Priority</SortableHeader>
             <SortableHeader sortKey="assignee">Assignee</SortableHeader>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tags</th>
+            <th className="px-4 py-3 text-left text-xs font-medium text-neutral-500 dark:text-neutral-400 uppercase tracking-wider">Tags</th>
             <SortableHeader sortKey="updatedAt">Last Updated</SortableHeader>
             <th className="relative px-4 py-3">
               <span className="sr-only">Actions</span>
             </th>
           </tr>
         </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
+        <tbody className="bg-white dark:bg-neutral-800 divide-y divide-neutral-200 dark:divide-neutral-700">
           {sortedIssues.map(issue => (
             <IssueRow
               key={issue.id}
@@ -90,9 +90,9 @@ export const ListView: React.FC<ListViewProps> = ({ issues, onUpdateIssue, allIs
           ))}
           {sortedIssues.length === 0 && (
             <tr>
-                <td colSpan={8} className="text-center py-10 text-gray-500">
-                    No issues match the current filters.
-                </td>
+              <td colSpan={8} className="text-center py-10 text-neutral-500 dark:text-neutral-400">
+                No issues match the current filters.
+              </td>
             </tr>
           )}
         </tbody>

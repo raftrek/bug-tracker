@@ -54,27 +54,27 @@ export const Column: React.FC<ColumnProps> = ({ column, onMoveIssue, onAddCommen
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`bg-neutral-200 rounded-lg p-3 transition-colors duration-300 ${isDragOver ? 'bg-neutral-300' : ''}`}
+      className={`bg-neutral-200 dark:bg-neutral-800/50 rounded-xl p-3 transition-colors duration-300 ${isDragOver ? 'bg-neutral-300 dark:bg-neutral-700' : ''}`}
     >
-      <div className="flex items-center mb-4">
+      <div className="flex items-center mb-4 px-1">
         <div className={`w-3 h-3 rounded-full mr-2 ${getStatusColor(column.id)}`}></div>
-        <h2 className="text-lg font-semibold text-neutral-600 uppercase tracking-wider">
+        <h2 className="text-lg font-semibold text-neutral-600 dark:text-neutral-300 uppercase tracking-wider">
           {column.title}
         </h2>
-        <span className="ml-2 bg-gray-300 text-neutral-600 text-sm font-bold px-2 py-1 rounded-full">
+        <span className="ml-2 bg-neutral-300 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300 text-sm font-bold px-2 py-0.5 rounded-full">
           {column.issues.length}
         </span>
       </div>
       <div className="space-y-4 h-full">
         {column.issues.map(issue => (
-          <IssueCard 
-            key={issue.id} 
-            issue={issue} 
+          <IssueCard
+            key={issue.id}
+            issue={issue}
             onAddComment={onAddComment}
             onEditComment={onEditComment}
             onDeleteComment={onDeleteComment}
-            onUpdateIssue={onUpdateIssue} 
-            allIssues={allIssues} 
+            onUpdateIssue={onUpdateIssue}
+            allIssues={allIssues}
             allTags={allTags}
           />
         ))}

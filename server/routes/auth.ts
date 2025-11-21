@@ -3,10 +3,31 @@ import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+
 const router = express.Router();
 const prisma = new PrismaClient();
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const uploadDir = 'uploads';
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir);
+        }
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({ storage: storage });
 
 // Register
 router.post('/register', async (req, res) => {
@@ -79,6 +100,35 @@ router.get('/me', async (req, res) => {
         res.json({ id: user.id, name: user.name, email: user.email, avatarUrl: user.avatarUrl });
     } catch (error) {
         res.status(401).json({ error: 'Invalid token' });
+    }
+});
+
+// Update Me
+router.put('/me', upload.single('avatar'), async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'No token provided' });
+        }
+
+        const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+        const { name, avatarUrl } = req.body;
+        let finalAvatarUrl = avatarUrl;
+
+        if (req.file) {
+            // If a file is uploaded, construct the URL
+            finalAvatarUrl = `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`;
+        }
+
+        const user = await prisma.user.update({
+            where: { id: decoded.userId },
+            data: { name, avatarUrl: finalAvatarUrl },
+        });
+
+        res.json({ id: user.id, name: user.name, email: user.email, avatarUrl: user.avatarUrl });
+    } catch (error) {
+        console.error('Update profile error:', error);
+        res.status(500).json({ error: 'Failed to update profile' });
     }
 });
 

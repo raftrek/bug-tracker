@@ -1,6 +1,6 @@
 import React from 'react';
 import { Column } from './Column';
-import type { ColumnData, Status, Issue, Tag } from '../types';
+import type { ColumnData, Status, Issue, Tag, TeamMember, User } from '../types';
 
 interface BoardProps {
   boardData: ColumnData[];
@@ -11,9 +11,11 @@ interface BoardProps {
   onUpdateIssue: (issueId: string, updatedValues: Partial<Omit<Issue, 'id'>>) => void;
   allIssues: Issue[];
   allTags: Tag[];
+  teamMembers?: TeamMember[];
+  currentUser?: User | null;
 }
 
-export const Board: React.FC<BoardProps> = ({ boardData, onMoveIssue, onAddComment, onEditComment, onDeleteComment, onUpdateIssue, allIssues, allTags }) => {
+export const Board: React.FC<BoardProps> = ({ boardData, onMoveIssue, onAddComment, onEditComment, onDeleteComment, onUpdateIssue, allIssues, allTags, teamMembers, currentUser }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
       {boardData.map(column => (
@@ -27,6 +29,8 @@ export const Board: React.FC<BoardProps> = ({ boardData, onMoveIssue, onAddComme
           onUpdateIssue={onUpdateIssue}
           allIssues={allIssues}
           allTags={allTags}
+          teamMembers={teamMembers}
+          currentUser={currentUser}
         />
       ))}
     </div>

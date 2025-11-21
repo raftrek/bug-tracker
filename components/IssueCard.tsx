@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import type { Issue, Comment, Tag } from '../types';
+import type { Issue, Comment, Tag, TeamMember, User } from '../types';
 import { Priority, Status } from '../types';
 import { generateIssueSummary } from '../services/geminiService';
 import { BrainCircuitIcon, SendIcon, CloseIcon, LockIcon, LinkIcon, PencilIcon, FileTextIcon, ImageIcon, TrashIcon, MaximizeIcon, MinimizeIcon } from './icons';
@@ -14,6 +14,8 @@ interface IssueCardProps {
   onUpdateIssue: (issueId: string, updatedValues: Partial<Omit<Issue, 'id'>>) => void;
   allIssues: Issue[];
   allTags: Tag[];
+  teamMembers?: TeamMember[];
+  currentUser?: User | null;
 }
 
 const PriorityIndicator: React.FC<{ priority: Priority }> = ({ priority }) => {
@@ -32,7 +34,7 @@ const PriorityIndicator: React.FC<{ priority: Priority }> = ({ priority }) => {
   );
 };
 
-export const IssueCard: React.FC<IssueCardProps> = ({ issue, onAddComment, onEditComment, onDeleteComment, onUpdateIssue, allIssues, allTags }) => {
+export const IssueCard: React.FC<IssueCardProps> = ({ issue, onAddComment, onEditComment, onDeleteComment, onUpdateIssue, allIssues, allTags, teamMembers = [], currentUser = null }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [editFormData, setEditFormData] = useState(issue);
@@ -97,7 +99,25 @@ export const IssueCard: React.FC<IssueCardProps> = ({ issue, onAddComment, onEdi
   };
 
   const handleAssigneeChange = (value: string) => {
-    setEditFormData(prev => ({ ...prev, assignee: { ...prev.assignee, name: value } }));
+    // Find the selected user/member
+    const allUsers = [currentUser, ...teamMembers.map(m => m.user)].filter(Boolean) as User[];
+    const selectedUser = allUsers.find(u => u.id === value);
+
+    if (selectedUser) {
+      setEditFormData(prev => ({
+        ...prev,
+        assignee: {
+          name: selectedUser.name,
+          avatarUrl: selectedUser.avatarUrl || `https://i.pravatar.cc/150?u=${selectedUser.name.replace(/\s/g, '')}`
+        }
+      }));
+    } else {
+      // If no user is selected (empty value), clear assignee but keep the structure
+      setEditFormData(prev => ({
+        ...prev,
+        assignee: { name: '', avatarUrl: '' }
+      }));
+    }
   };
 
   const handleTagsChange = (tags: Tag[]) => {
@@ -117,7 +137,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({ issue, onAddComment, onEdi
       ...updatedValues,
       assignee: {
         name: updatedValues.assignee.name,
-        avatarUrl: `https://i.pravatar.cc/150?u=${updatedValues.assignee.name.replace(/\s/g, '')}`
+        avatarUrl: updatedValues.assignee.avatarUrl
       }
     };
 
@@ -207,12 +227,28 @@ export const IssueCard: React.FC<IssueCardProps> = ({ issue, onAddComment, onEdi
           </div>
           <div>
             <label className="text-xs font-bold text-gray-600">Assignee</label>
-            <input
-              type="text"
-              value={editFormData.assignee.name}
+            <select
+              value={(() => {
+                // Find the user ID based on the current assignee name
+                const allUsers = [currentUser, ...teamMembers.map(m => m.user)].filter(Boolean) as User[];
+                const matchingUser = allUsers.find(u => u.name === editFormData.assignee.name);
+                return matchingUser?.id || '';
+              })()}
               onChange={(e) => handleAssigneeChange(e.target.value)}
               className="mt-1 block w-full px-2 py-1 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-sm text-neutral-900 dark:text-neutral-100"
-            />
+            >
+              <option value="">Unassigned</option>
+              {currentUser && (
+                <option key={currentUser.id} value={currentUser.id}>
+                  {currentUser.name} (You)
+                </option>
+              )}
+              {teamMembers.map(member => (
+                <option key={member.user.id} value={member.user.id}>
+                  {member.user.name}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="text-xs font-bold text-gray-600">Start Date</label>

@@ -15,6 +15,12 @@ app.use(express.json());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
+app.use('/uploads', express.static('uploads'));
+
+import fs from 'fs';
+if (!fs.existsSync('uploads')) {
+    fs.mkdirSync('uploads');
+}
 
 app.get('/', (req, res) => {
     res.send('Bug Tracker API is running');

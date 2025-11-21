@@ -5,6 +5,7 @@ import NewProject from './pages/NewProject';
 import ProjectBoardPage from './pages/ProjectBoard';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
+import SettingsPage from './pages/SettingsPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -54,10 +55,18 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <SettingsPage />
+              </ProtectedRoute>
+            }
+          />
           <Route path="*" element={<Navigate to="/projects" replace />} />
         </Routes>
       </div>
-    </AuthProvider>
+    </AuthProvider >
   );
 }
 

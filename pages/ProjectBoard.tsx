@@ -341,6 +341,8 @@ const ProjectBoardPage: React.FC = () => {
             onUpdateIssue={handleUpdateIssue}
             allIssues={issues}
             allTags={availableTags}
+            teamMembers={project?.members}
+            currentUser={currentUser}
           />
         ) : (
           <ListView

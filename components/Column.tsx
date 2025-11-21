@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { IssueCard } from './IssueCard';
 // FIX: Import Status as a value to use its enum members in the switch statement.
-import { Status, type ColumnData, type Issue, type Tag } from '../types';
+import { Status, type ColumnData, type Issue, type Tag, type TeamMember, type User } from '../types';
 
 interface ColumnProps {
   column: ColumnData;
@@ -12,9 +12,11 @@ interface ColumnProps {
   onUpdateIssue: (issueId: string, updatedValues: Partial<Omit<Issue, 'id'>>) => void;
   allIssues: Issue[];
   allTags: Tag[];
+  teamMembers?: TeamMember[];
+  currentUser?: User | null;
 }
 
-export const Column: React.FC<ColumnProps> = ({ column, onMoveIssue, onAddComment, onEditComment, onDeleteComment, onUpdateIssue, allIssues, allTags }) => {
+export const Column: React.FC<ColumnProps> = ({ column, onMoveIssue, onAddComment, onEditComment, onDeleteComment, onUpdateIssue, allIssues, allTags, teamMembers, currentUser }) => {
   const [isDragOver, setIsDragOver] = useState(false);
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -76,6 +78,8 @@ export const Column: React.FC<ColumnProps> = ({ column, onMoveIssue, onAddCommen
             onUpdateIssue={onUpdateIssue}
             allIssues={allIssues}
             allTags={allTags}
+            teamMembers={teamMembers}
+            currentUser={currentUser}
           />
         ))}
         {column.issues.length === 0 && <div className="h-16"></div>}

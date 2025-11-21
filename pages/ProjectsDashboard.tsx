@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getProjects } from '../services/projectService';
 import { Project, ProjectStatus } from '../types';
-import { AddIcon, KanbanIcon } from '../components/icons';
+import { AddIcon, KanbanIcon, SettingsIcon } from '../components/icons';
 import { ThemeToggle } from '../components/ThemeToggle';
 
 const StatusBadge: React.FC<{ status: ProjectStatus }> = ({ status }) => {
@@ -56,6 +56,13 @@ export const ProjectsDashboard: React.FC = () => {
         <div className="container mx-auto flex justify-between items-center">
           <h1 className="text-2xl font-bold text-primary-600 dark:text-primary-400">Projects</h1>
           <div className="flex items-center gap-4">
+            <Link
+              to="/settings"
+              className="p-2 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded-lg transition-colors text-neutral-600 dark:text-neutral-400"
+              title="Settings"
+            >
+              <SettingsIcon className="w-5 h-5" />
+            </Link>
             <ThemeToggle />
             <Link
               to="/projects/new"

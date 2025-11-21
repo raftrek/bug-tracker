@@ -20,26 +20,45 @@ export enum IssueType {
   QUESTION = 'Question',
 }
 
+export enum Role {
+  ADMIN = 'Admin',
+  MEMBER = 'Member',
+  VIEWER = 'Viewer',
+}
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  avatarUrl?: string;
+}
+
+export interface TeamMember {
+  user: User;
+  role: Role;
+  joinedAt: string;
+}
+
 export interface Tag {
   name: string;
   color: string;
 }
 
 export interface Comment {
-    id: string;
-    text: string;
-    author: {
-        name: string;
-        avatarUrl: string;
-    };
-    timestamp: string;
+  id: string;
+  text: string;
+  author: {
+    name: string;
+    avatarUrl: string;
+  };
+  timestamp: string;
 }
 
 export interface Attachment {
-    name: string;
-    type: string;
-    size: number;
-    url: string;
+  name: string;
+  type: string;
+  size: number;
+  url: string;
 }
 
 export interface Issue {
@@ -104,4 +123,5 @@ export interface Project {
   updatedAt?: string;
   attachments?: Attachment[];
   config?: ProjectConfig;
+  members?: TeamMember[];
 }

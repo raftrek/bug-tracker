@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getProjects, searchProjects, canAccessProject } from '../services/projectService';
+import { getProjects } from '../services/projectService';
 import { Project, ProjectStatus } from '../types';
 import { AddIcon, KanbanIcon } from '../components/icons';
 import { ThemeToggle } from '../components/ThemeToggle';
@@ -27,29 +27,26 @@ export const ProjectsDashboard: React.FC = () => {
   useEffect(() => {
     setIsLoading(true);
     setError(null);
-    // Simulate loading state for a smoother UX
-    const timer = setTimeout(() => {
-      try {
-        setProjects(getProjects());
-      } catch {
-        setError('Failed to load projects');
-      } finally {
+    getProjects()
+      .then(data => {
+        setProjects(data);
         setIsLoading(false);
-      }
-    }, 300);
-    return () => clearTimeout(timer);
+      })
+      .catch(() => {
+        setError('Failed to load projects');
+        setIsLoading(false);
+      });
   }, []);
 
   const filtered = useMemo(() => {
-    const status = statusFilter || undefined;
-    return searchProjects(query, status);
+    return projects.filter(p => {
+      const matchesQuery = !query || p.name.toLowerCase().includes(query.toLowerCase()) || (p.description || '').toLowerCase().includes(query.toLowerCase());
+      const matchesStatus = !statusFilter || p.status === statusFilter;
+      return matchesQuery && matchesStatus;
+    });
   }, [query, statusFilter, projects]);
 
   const openProject = (project: Project) => {
-    if (!canAccessProject(project)) {
-      setError('You are not authorized to access this project.');
-      return;
-    }
     navigate(`/board/${project.id}`);
   };
 

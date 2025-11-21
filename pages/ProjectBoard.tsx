@@ -2,180 +2,205 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Board } from '../components/Board';
 import { CreateIssueModal } from '../components/CreateIssueModal';
+import { TeamModal } from '../components/TeamModal';
 import { AddIcon, KanbanIcon, ListIcon } from '../components/icons';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { ALL_TAGS, ISSUE_TEMPLATES } from '../constants';
-import { Status, Priority, type Issue, type ColumnData, type Tag, type Comment } from '../types';
+import { Status, Priority, type Issue, type ColumnData, type Tag, type Project } from '../types';
+import { useAuth } from '../context/AuthContext';
 import { ListView } from '../components/ListView';
-import { getProjectById, getProjectIssues, saveProjectIssues, canAccessProject } from '../services/projectService';
+import {
+  getProjectById,
+  getProjectIssues,
+  createIssue,
+  updateIssue,
+  createComment,
+  updateComment,
+  deleteComment
+} from '../services/projectService';
 
 const ProjectBoardPage: React.FC = () => {
   const { projectId } = useParams();
+  const { user: currentUser } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [projectName, setProjectName] = useState<string>('Project Board');
+  const [project, setProject] = useState<Project | null>(null);
   const [issues, setIssues] = useState<Issue[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isTeamModalOpen, setIsTeamModalOpen] = useState(false);
   const [availableTags, setAvailableTags] = useState<Tag[]>(ALL_TAGS);
   const [priorityFilter, setPriorityFilter] = useState<string>('All');
   const [assigneeFilter, setAssigneeFilter] = useState<string>('All');
   const [tagFilter, setTagFilter] = useState<string>('All');
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
 
-  useEffect(() => {
+  const loadProjectData = useCallback(async () => {
+    if (!projectId) return;
     setIsLoading(true);
-    setLoadError(null);
-    const timer = setTimeout(() => {
-      if (!projectId) {
-        setLoadError('Project ID is missing.');
-        setIsLoading(false);
-        return;
-      }
-      const project = getProjectById(projectId);
-      if (!project) {
+    try {
+      const proj = await getProjectById(projectId);
+      if (!proj) {
         setLoadError('Project not found or inaccessible.');
-        setIsLoading(false);
         return;
       }
-      if (!canAccessProject(project)) {
-        setLoadError('Unauthorized to access this project.');
-        setIsLoading(false);
-        return;
-      }
-      setProjectName(project.name);
-      const loadedIssues = getProjectIssues(projectId);
-      setIssues(loadedIssues);
-      const defaultView = project.config && typeof project.config.defaultView === 'string' ? project.config.defaultView : 'kanban';
-      setViewMode(defaultView === 'list' ? 'list' : 'kanban');
-      setIsLoading(false);
-    }, 250);
-    return () => clearTimeout(timer);
-  }, [projectId]);
+      setProject(proj);
 
-  const persist = useCallback((nextIssues: Issue[]) => {
-    if (projectId) {
-      saveProjectIssues(projectId, nextIssues);
+      // Issues are included in project details from API
+      setIssues(proj.issues || []);
+
+      const defaultView = proj.config && typeof proj.config.defaultView === 'string' ? proj.config.defaultView : 'kanban';
+      setViewMode(defaultView === 'list' ? 'list' : 'kanban');
+    } catch (err) {
+      setLoadError('Failed to load project.');
+    } finally {
+      setIsLoading(false);
     }
   }, [projectId]);
 
-  const handleMoveIssue = useCallback((issueId: string, sourceColumnId: Status, targetColumnId: Status) => {
+  useEffect(() => {
+    loadProjectData();
+  }, [loadProjectData]);
+
+  const handleMoveIssue = useCallback(async (issueId: string, sourceColumnId: Status, targetColumnId: Status) => {
     if (sourceColumnId === targetColumnId) return;
-    setIssues(prevIssues => {
-      const updated = prevIssues.map(issue =>
-        issue.id === issueId ? { ...issue, status: targetColumnId, updatedAt: new Date().toISOString() } : issue
-      );
-      persist(updated);
-      return updated;
-    });
-  }, [persist]);
 
-  const handleUpdateIssue = useCallback((issueId: string, updatedValues: Partial<Omit<Issue, 'id'>>) => {
-    setIssues(prevIssues => {
-      const updated = prevIssues.map(issue => {
-        if (issue.id === issueId) {
-          if (updatedValues.tags) {
-            const newTags = updatedValues.tags.filter(
-              (tag) => !availableTags.some((existingTag) => existingTag.name === tag.name)
-            );
-            if (newTags.length > 0) {
-              setAvailableTags(prevTags => [...prevTags, ...newTags]);
-            }
+    // Optimistic update
+    setIssues(prevIssues => prevIssues.map(issue =>
+      issue.id === issueId ? { ...issue, status: targetColumnId, updatedAt: new Date().toISOString() } : issue
+    ));
+
+    try {
+      if (projectId) {
+        await updateIssue(projectId, issueId, { status: targetColumnId });
+      }
+    } catch (error) {
+      console.error('Failed to move issue', error);
+      // Revert would go here
+      loadProjectData();
+    }
+  }, [projectId, loadProjectData]);
+
+  const handleUpdateIssue = useCallback(async (issueId: string, updatedValues: Partial<Omit<Issue, 'id'>>) => {
+    // Optimistic update
+    setIssues(prevIssues => prevIssues.map(issue => {
+      if (issue.id === issueId) {
+        if (updatedValues.tags) {
+          const newTags = updatedValues.tags.filter(
+            (tag) => !availableTags.some((existingTag) => existingTag.name === tag.name)
+          );
+          if (newTags.length > 0) {
+            setAvailableTags(prevTags => [...prevTags, ...newTags]);
           }
-          return { ...issue, ...updatedValues, updatedAt: new Date().toISOString() };
         }
-        return issue;
-      });
-      persist(updated);
-      return updated;
-    });
-  }, [availableTags, persist]);
+        return { ...issue, ...updatedValues, updatedAt: new Date().toISOString() };
+      }
+      return issue;
+    }));
 
-  const handleAddComment = useCallback((issueId: string, commentText: string) => {
-    const newComment: Comment = {
-      id: `comment-${Date.now()}`,
-      text: commentText,
-      author: {
-        name: 'Current User',
-        avatarUrl: `https://i.pravatar.cc/150?u=CurrentUser`
-      },
-      timestamp: new Date().toISOString(),
-    };
+    try {
+      if (projectId) {
+        await updateIssue(projectId, issueId, updatedValues);
+      }
+    } catch (error) {
+      console.error('Failed to update issue', error);
+      loadProjectData();
+    }
+  }, [projectId, availableTags, loadProjectData]);
 
-    setIssues(prevIssues => {
-      const updated = prevIssues.map(issue =>
+  const handleAddComment = useCallback(async (issueId: string, commentText: string) => {
+    if (!projectId) return;
+    try {
+      const newComment = await createComment(projectId, issueId, commentText);
+      setIssues(prevIssues => prevIssues.map(issue =>
         issue.id === issueId
           ? { ...issue, comments: [...(issue.comments || []), newComment], updatedAt: new Date().toISOString() }
           : issue
-      );
-      persist(updated);
-      return updated;
-    });
-  }, [persist]);
-
-  const handleEditComment = useCallback((issueId: string, commentId: string, newText: string) => {
-    setIssues(prevIssues => {
-      const updated = prevIssues.map(issue => {
-        if (issue.id === issueId) {
-          const updatedComments = issue.comments?.map(comment =>
-            comment.id === commentId ? { ...comment, text: newText } : comment
-          );
-          return { ...issue, comments: updatedComments, updatedAt: new Date().toISOString() };
-        }
-        return issue;
-      });
-      persist(updated);
-      return updated;
-    });
-  }, [persist]);
-
-  const handleDeleteComment = useCallback((issueId: string, commentId: string) => {
-    setIssues(prevIssues => {
-      const updated = prevIssues.map(issue => {
-        if (issue.id === issueId) {
-          const updatedComments = issue.comments?.filter(comment => comment.id !== commentId);
-          return { ...issue, comments: updatedComments, updatedAt: new Date().toISOString() };
-        }
-        return issue;
-      });
-      persist(updated);
-      return updated;
-    });
-  }, [persist]);
-
-  const handleCreateIssue = useCallback((newIssueData: Omit<Issue, 'id' | 'status' | 'updatedAt'>) => {
-    const newIssue: Issue = {
-      ...newIssueData,
-      id: `TASK-${issues.length + 1}`,
-      status: Status.TODO,
-      updatedAt: new Date().toISOString(),
-    };
-
-    if (newIssue.tags) {
-      const newTags = newIssue.tags.filter(
-        (tag) => !availableTags.some((existingTag) => existingTag.name === tag.name)
-      );
-      if (newTags.length > 0) {
-        setAvailableTags(prevTags => [...prevTags, ...newTags]);
-      }
+      ));
+    } catch (error) {
+      console.error('Failed to add comment', error);
     }
+  }, [projectId]);
 
-    setIssues(prevIssues => {
-      const next = [newIssue, ...prevIssues];
-      persist(next);
-      return next;
-    });
-    setIsModalOpen(false);
-  }, [issues.length, availableTags, persist]);
+  const handleEditComment = useCallback(async (issueId: string, commentId: string, newText: string) => {
+    if (!projectId) return;
+
+    // Optimistic
+    setIssues(prevIssues => prevIssues.map(issue => {
+      if (issue.id === issueId) {
+        const updatedComments = issue.comments?.map(comment =>
+          comment.id === commentId ? { ...comment, text: newText } : comment
+        );
+        return { ...issue, comments: updatedComments };
+      }
+      return issue;
+    }));
+
+    try {
+      await updateComment(projectId, issueId, commentId, newText);
+    } catch (error) {
+      console.error('Failed to edit comment', error);
+      loadProjectData();
+    }
+  }, [projectId, loadProjectData]);
+
+  const handleDeleteComment = useCallback(async (issueId: string, commentId: string) => {
+    if (!projectId) return;
+
+    // Optimistic
+    setIssues(prevIssues => prevIssues.map(issue => {
+      if (issue.id === issueId) {
+        const updatedComments = issue.comments?.filter(comment => comment.id !== commentId);
+        return { ...issue, comments: updatedComments };
+      }
+      return issue;
+    }));
+
+    try {
+      await deleteComment(projectId, issueId, commentId);
+    } catch (error) {
+      console.error('Failed to delete comment', error);
+      loadProjectData();
+    }
+  }, [projectId, loadProjectData]);
+
+  const handleCreateIssue = useCallback(async (newIssueData: Omit<Issue, 'id' | 'status' | 'updatedAt'>) => {
+    if (!projectId) return;
+
+    try {
+      const createdIssue = await createIssue(projectId, {
+        ...newIssueData,
+        status: Status.TODO
+      });
+
+      if (newIssueData.tags) {
+        const newTags = newIssueData.tags.filter(
+          (tag) => !availableTags.some((existingTag) => existingTag.name === tag.name)
+        );
+        if (newTags.length > 0) {
+          setAvailableTags(prevTags => [...prevTags, ...newTags]);
+        }
+      }
+
+      setIssues(prevIssues => [createdIssue, ...prevIssues]);
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error('Failed to create issue', error);
+    }
+  }, [projectId, availableTags]);
+
+  const handleTeamUpdate = useCallback(() => {
+    loadProjectData();
+  }, [loadProjectData]);
 
   const uniqueAssignees = useMemo(() => {
-    const assignees = issues.map(issue => issue.assignee.name);
+    const assignees = issues.map(issue => issue.assignee?.name || 'Unassigned');
     return ['All', ...Array.from(new Set(assignees))];
   }, [issues]);
 
   const filteredIssues = useMemo(() => {
     return issues.filter(issue => {
       const priorityMatch = priorityFilter === 'All' || issue.priority === priorityFilter;
-      const assigneeMatch = assigneeFilter === 'All' || issue.assignee.name === assigneeFilter;
+      const assigneeMatch = assigneeFilter === 'All' || (issue.assignee?.name || 'Unassigned') === assigneeFilter;
       const tagMatch = tagFilter === 'All' || issue.tags?.some(tag => tag.name === tagFilter);
       return priorityMatch && assigneeMatch && tagMatch;
     });
@@ -227,9 +252,15 @@ const ProjectBoardPage: React.FC = () => {
     <div className="bg-neutral-50 dark:bg-neutral-900 min-h-screen text-neutral-900 dark:text-neutral-100 font-sans transition-colors duration-200">
       <header className="bg-white dark:bg-neutral-800 shadow-sm p-4 sticky top-0 z-20 border-b border-neutral-200 dark:border-neutral-700">
         <div className="container mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-primary-600 dark:text-primary-400">{projectName}</h1>
+          <h1 className="text-2xl font-bold text-primary-600 dark:text-primary-400">{project?.name || 'Project Board'}</h1>
           <div className="flex items-center gap-3">
             <ThemeToggle />
+            <button
+              onClick={() => setIsTeamModalOpen(true)}
+              className="px-4 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600 transition-colors text-sm font-medium"
+            >
+              Team
+            </button>
             <Link to="/projects" className="px-4 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600 transition-colors text-sm font-medium">Back to Projects</Link>
             <button
               onClick={() => setIsModalOpen(true)}
@@ -327,7 +358,17 @@ const ProjectBoardPage: React.FC = () => {
         allIssues={issues}
         allTags={availableTags}
         issueTemplates={ISSUE_TEMPLATES}
+        teamMembers={project?.members || []}
+        currentUser={currentUser}
       />
+      {project && (
+        <TeamModal
+          project={project}
+          isOpen={isTeamModalOpen}
+          onClose={() => setIsTeamModalOpen(false)}
+          onUpdate={handleTeamUpdate}
+        />
+      )}
     </div>
   );
 };

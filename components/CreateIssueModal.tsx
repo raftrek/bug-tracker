@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { TagInput } from './TagInput';
 import { CloseIcon, UploadIcon, TrashIcon } from './icons';
 import { DatePicker } from './DatePicker';
-import type { Issue, IssueTemplate, Priority, Tag, Attachment, IssueType } from '../types';
+import type { Issue, IssueTemplate, Priority, Tag, Attachment, IssueType, User, TeamMember } from '../types';
 import { Status, Priority as PriorityEnum, IssueType as IssueTypeEnum } from '../types';
 import { getAllTemplates, saveCustomTemplate, deleteCustomTemplate } from '../services/templateService';
 
@@ -13,6 +13,8 @@ interface CreateIssueModalProps {
   allIssues: Issue[];
   allTags: Tag[];
   issueTemplates: IssueTemplate[];
+  teamMembers?: TeamMember[];
+  currentUser?: User | null;
 }
 
 const DEFAULT_ISSUE_STATE: Omit<Issue, 'id' | 'status' | 'updatedAt'> = {
@@ -36,6 +38,8 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
   allIssues,
   allTags,
   issueTemplates,
+  teamMembers = [],
+  currentUser = null,
 }) => {
   const [issueData, setIssueData] = useState(DEFAULT_ISSUE_STATE);
   const [selectedTemplate, setSelectedTemplate] = useState('');
@@ -124,7 +128,25 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
   };
 
   const handleAssigneeChange = (value: string) => {
-    setIssueData(prev => ({ ...prev, assignee: { ...prev.assignee, name: value } }));
+    // Find the selected user/member
+    const allUsers = [currentUser, ...teamMembers.map(m => m.user)].filter(Boolean) as User[];
+    const selectedUser = allUsers.find(u => u.id === value);
+
+    if (selectedUser) {
+      setIssueData(prev => ({
+        ...prev,
+        assignee: {
+          name: selectedUser.name,
+          avatarUrl: selectedUser.avatarUrl || `https://i.pravatar.cc/150?u=${selectedUser.name.replace(/\s/g, '')}`
+        }
+      }));
+    } else {
+      // If no user is selected (empty value), clear assignee
+      setIssueData(prev => ({
+        ...prev,
+        assignee: { name: '', avatarUrl: '' }
+      }));
+    }
   };
 
   const handleTagsChange = (tags: Tag[]) => {
@@ -322,14 +344,29 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
             </div>
             <div>
               <label htmlFor="assignee" className="text-sm font-bold text-gray-600 mb-1 block">Assignee</label>
-              <input
+              <select
                 id="assignee"
-                type="text"
-                value={issueData.assignee.name}
+                value={(() => {
+                  // Find the user ID based on the current assignee name
+                  const allUsers = [currentUser, ...teamMembers.map(m => m.user)].filter(Boolean) as User[];
+                  const matchingUser = allUsers.find(u => u.name === issueData.assignee.name);
+                  return matchingUser?.id || '';
+                })()}
                 onChange={(e) => handleAssigneeChange(e.target.value)}
-                placeholder="Enter assignee name"
                 className="block w-full text-sm bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-900 dark:text-neutral-100 p-2"
-              />
+              >
+                <option value="">Unassigned</option>
+                {currentUser && (
+                  <option key={currentUser.id} value={currentUser.id}>
+                    {currentUser.name} (You)
+                  </option>
+                )}
+                {teamMembers.map(member => (
+                  <option key={member.user.id} value={member.user.id}>
+                    {member.user.name}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label htmlFor="startDate" className="text-sm font-bold text-gray-600 mb-1 block">Start Date</label>

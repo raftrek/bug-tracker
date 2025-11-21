@@ -43,7 +43,7 @@ export const NewProject: React.FC = () => {
     }
     setIsSubmitting(true);
     try {
-      const proj = createProject({ name, description, status, requiresAuth, attachments, config });
+      const proj = await createProject({ name, description, status, requiresAuth, attachments, config });
       setCreatedProjectId(proj.id);
     } catch (err) {
       setError('Failed to create project. Please try again.');

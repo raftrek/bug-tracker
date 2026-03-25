@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import type { Issue, Comment, Tag, TeamMember, User } from '../types';
+import type { Issue, Comment, Tag, TeamMember, User, Attachment } from '../types';
 import { Priority, Status } from '../types';
 import { generateIssueSummary } from '../services/geminiService';
-import { BrainCircuitIcon, SendIcon, CloseIcon, LockIcon, LinkIcon, PencilIcon, FileTextIcon, ImageIcon, TrashIcon, MaximizeIcon, MinimizeIcon } from './icons';
+import { BrainCircuitIcon, SendIcon, CloseIcon, LockIcon, LinkIcon, PencilIcon, FileTextIcon, ImageIcon, TrashIcon, MaximizeIcon, MinimizeIcon, UploadIcon } from './icons';
 import { TagInput } from './TagInput';
 import { DatePicker } from './DatePicker';
 
@@ -37,6 +37,7 @@ const PriorityIndicator: React.FC<{ priority: Priority }> = ({ priority }) => {
 export const IssueCard: React.FC<IssueCardProps> = ({ issue, onAddComment, onEditComment, onDeleteComment, onUpdateIssue, allIssues, allTags, teamMembers = [], currentUser = null }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isReadModeOpen, setIsReadModeOpen] = useState(false);
   const [editFormData, setEditFormData] = useState(issue);
   const [isSummarizing, setIsSummarizing] = useState(false);
   const [summary, setSummary] = useState('');
@@ -47,6 +48,50 @@ export const IssueCard: React.FC<IssueCardProps> = ({ issue, onAddComment, onEdi
   const availableDependencies = useMemo(() => {
     return allIssues.filter(i => i.status !== Status.DONE && i.id !== issue.id);
   }, [allIssues, issue.id]);
+
+  const isImageAttachment = (attachment: Attachment) => {
+    const mimeType = attachment.type || '';
+    const fileName = attachment.name || '';
+    return mimeType.startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(fileName);
+  };
+
+  const getAttachmentUrl = (attachment: Attachment) => {
+    const rawUrl = attachment.url || '';
+    if (!rawUrl) return '';
+    if (rawUrl.startsWith('data:') || rawUrl.startsWith('blob:') || /^https?:\/\//i.test(rawUrl)) {
+      return rawUrl;
+    }
+    const viteEnv = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
+    const apiBaseUrl = viteEnv?.VITE_API_BASE_URL || `${window.location.protocol}//${window.location.hostname}:3001/api`;
+    const apiOrigin = new URL(apiBaseUrl, window.location.origin).origin;
+    if (rawUrl.startsWith('/uploads/')) {
+      return `${apiOrigin}${rawUrl}`;
+    }
+    if (rawUrl.startsWith('uploads/')) {
+      return `${apiOrigin}/${rawUrl}`;
+    }
+    return rawUrl;
+  };
+
+  const handleAttachmentClick = async (e: React.MouseEvent<HTMLAnchorElement>, attachment: Attachment) => {
+    const url = getAttachmentUrl(attachment);
+    if (url.startsWith('data:')) {
+      e.preventDefault();
+      try {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const newWindow = window.open(blobUrl, '_blank');
+        if (newWindow) {
+           setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+        } else {
+           window.location.href = blobUrl;
+        }
+      } catch (error) {
+        console.error('Failed to open attachment', error);
+      }
+    }
+  };
 
   const { isBlocked, blockingIssues } = useMemo(() => {
     // FIX: Explicitly type the Map to aid TypeScript's type inference.
@@ -133,6 +178,49 @@ export const IssueCard: React.FC<IssueCardProps> = ({ issue, onAddComment, onEdi
     setEditFormData(prev => ({ ...prev, dependencies: selectedOptions }));
   };
 
+  const readFileAsDataUrl = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const processEditAttachments = async (files: FileList) => {
+    const selectedFiles = Array.from(files);
+    const encodedFiles = await Promise.all(
+      selectedFiles.map(async (file) => ({
+        file,
+        dataUrl: await readFileAsDataUrl(file),
+      }))
+    );
+    const attachments: Attachment[] = encodedFiles.map(({ file, dataUrl }) => ({
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      url: dataUrl,
+    }));
+    setEditFormData(prev => ({
+      ...prev,
+      attachments: [...(prev.attachments || []), ...attachments],
+    }));
+  };
+
+  const handleEditAttachmentChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      await processEditAttachments(e.target.files);
+      e.target.value = '';
+    }
+  };
+
+  const removeEditAttachment = (attachmentName: string) => {
+    setEditFormData(prev => ({
+      ...prev,
+      attachments: (prev.attachments || []).filter((attachment) => attachment.name !== attachmentName),
+    }));
+  };
+
   const handleSaveEdit = () => {
     const { id, status, updatedAt, comments, ...updatedValues } = editFormData;
 
@@ -152,6 +240,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({ issue, onAddComment, onEdi
 
   const handleStartEditing = () => {
     setEditFormData(issue);
+    setIsReadModeOpen(false);
     setIsEditing(true);
   };
 
@@ -159,6 +248,10 @@ export const IssueCard: React.FC<IssueCardProps> = ({ issue, onAddComment, onEdi
     setEditFormData(issue);
     setIsEditing(false);
     setIsExpanded(false);
+  };
+
+  const handleOpenReadMode = () => {
+    setIsReadModeOpen(true);
   };
 
   const handleStartEditComment = (comment: Comment) => {
@@ -304,6 +397,48 @@ export const IssueCard: React.FC<IssueCardProps> = ({ issue, onAddComment, onEdi
             ))}
           </select>
         </div>
+        <div>
+          <label className="text-xs font-bold text-gray-600">Attachments</label>
+          <div className="mt-1 flex items-center gap-2">
+            <label
+              htmlFor={`edit-attachment-upload-${issue.id}`}
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-primary-700 bg-primary-50 border border-primary-200 rounded-md cursor-pointer hover:bg-primary-100"
+            >
+              <UploadIcon className="w-4 h-4" />
+              <span>Add files</span>
+              <input
+                id={`edit-attachment-upload-${issue.id}`}
+                type="file"
+                multiple
+                className="sr-only"
+                onChange={handleEditAttachmentChange}
+              />
+            </label>
+          </div>
+          {editFormData.attachments && editFormData.attachments.length > 0 && (
+            <div className="mt-2 space-y-2">
+              {editFormData.attachments.map((attachment) => (
+                <div key={`${attachment.name}-${(attachment.url || '').slice(0, 24)}`} className="flex items-center justify-between bg-neutral-50 dark:bg-neutral-900/50 p-2 rounded-md border border-neutral-100 dark:border-neutral-700">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {isImageAttachment(attachment) ? (
+                      <img src={getAttachmentUrl(attachment)} alt={attachment.name} className="w-10 h-10 rounded object-cover border border-neutral-200 dark:border-neutral-700" />
+                    ) : (
+                      <FileTextIcon className="w-5 h-5 text-gray-500 shrink-0" />
+                    )}
+                    <span className="text-xs text-neutral-700 dark:text-neutral-300 truncate">{attachment.name}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeEditAttachment(attachment.name)}
+                    className="text-red-500 hover:text-red-700"
+                  >
+                    <CloseIcon className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </>
     );
 
@@ -351,7 +486,67 @@ export const IssueCard: React.FC<IssueCardProps> = ({ issue, onAddComment, onEdi
   }
 
   return (
-    <div
+    <>
+      {isReadModeOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 flex justify-center items-center p-4" onClick={() => setIsReadModeOpen(false)}>
+          <div className="bg-white dark:bg-neutral-800 rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col border border-neutral-200 dark:border-neutral-700" onClick={(e) => e.stopPropagation()}>
+            <header className="flex justify-between items-center p-4 border-b border-neutral-200 dark:border-neutral-700">
+              <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">Issue Details</h2>
+              <button onClick={() => setIsReadModeOpen(false)} className="text-gray-500 hover:text-gray-800">
+                <CloseIcon className="w-6 h-6" />
+              </button>
+            </header>
+            <div className="p-6 space-y-4 overflow-y-auto">
+              <div>
+                <h3 className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">{issue.title}</h3>
+                <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">{issue.type} • {issue.priority}</p>
+              </div>
+              <div className="text-sm text-neutral-700 dark:text-neutral-300 whitespace-pre-wrap">{issue.description || 'No description provided.'}</div>
+              {issue.tags && issue.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {issue.tags.map(tag => (
+                    <span key={tag.name} className={`px-2 py-1 rounded-full text-xs font-semibold ${tag.color}`}>
+                      {tag.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {issue.attachments && issue.attachments.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-sm font-semibold text-neutral-700 dark:text-neutral-300">Attachments</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {issue.attachments.map((attachment) => (
+                      <a
+                        key={`${attachment.name}-${(attachment.url || '').slice(0, 24)}`}
+                        href={getAttachmentUrl(attachment)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => handleAttachmentClick(e, attachment)}
+                        className="flex flex-col bg-neutral-50 dark:bg-neutral-900/50 rounded-md border border-neutral-200 dark:border-neutral-700 p-3 hover:border-primary-400 transition-colors"
+                      >
+                        {isImageAttachment(attachment) && (
+                          <div className="flex-1 flex items-center justify-center bg-neutral-100 dark:bg-neutral-800 rounded-md mb-2 overflow-hidden border border-neutral-200 dark:border-neutral-700">
+                            <img src={getAttachmentUrl(attachment)} alt={attachment.name} className="max-w-full max-h-64 object-contain" />
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 text-sm text-primary-600 dark:text-primary-400 mt-auto">
+                          {isImageAttachment(attachment) ? <ImageIcon className="w-4 h-4 shrink-0" /> : <FileTextIcon className="w-4 h-4 shrink-0" />}
+                          <span className="truncate">{attachment.name}</span>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            <footer className="flex justify-end space-x-2 p-4 border-t border-neutral-200 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-900/50 mt-auto rounded-b-xl">
+              <button onClick={() => setIsReadModeOpen(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md">Close</button>
+              <button onClick={handleStartEditing} className="px-4 py-2 text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 rounded-md">Edit</button>
+            </footer>
+          </div>
+        </div>
+      )}
+      <div
       draggable={!isBlocked}
       onDragStart={handleDragStart}
       className={`bg-white dark:bg-neutral-800 rounded-lg p-4 shadow-sm hover:shadow-md transition-all duration-200 border-l-4 border-primary-500 dark:border-primary-400 group ${isBlocked ? 'opacity-60 cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'}`}
@@ -419,6 +614,13 @@ export const IssueCard: React.FC<IssueCardProps> = ({ issue, onAddComment, onEdi
           {/* Right group */}
           <div className="flex items-center space-x-2">
             <button
+              onClick={handleOpenReadMode}
+              className="p-1.5 bg-neutral-100 dark:bg-neutral-700 hover:bg-neutral-200 dark:hover:bg-neutral-600 rounded-full text-neutral-600 dark:text-neutral-400 transition-colors"
+              title="Open Read Mode"
+            >
+              <FileTextIcon className="w-5 h-5" />
+            </button>
+            <button
               onClick={handleStartEditing}
               className="p-1.5 bg-neutral-100 dark:bg-neutral-700 hover:bg-neutral-200 dark:hover:bg-neutral-600 rounded-full text-neutral-600 dark:text-neutral-400 transition-colors"
               title="Edit Issue"
@@ -464,13 +666,13 @@ export const IssueCard: React.FC<IssueCardProps> = ({ issue, onAddComment, onEdi
             <ul className="space-y-2">
               {issue.attachments.map((attachment, index) => (
                 <li key={index} className="bg-neutral-50 dark:bg-neutral-900/50 p-2 rounded-md border border-neutral-100 dark:border-neutral-700">
-                  <a href={attachment.url} target="_blank" rel="noopener noreferrer" className="flex items-center text-sm text-primary-600 dark:text-primary-400 hover:underline">
-                    {attachment.type.startsWith('image/')
-                      ? <ImageIcon className="w-5 h-5 text-gray-500" />
-                      : <FileTextIcon className="w-5 h-5 text-gray-500" />
+                  <a href={getAttachmentUrl(attachment)} target="_blank" rel="noopener noreferrer" onClick={(e) => handleAttachmentClick(e, attachment)} className="flex items-center text-sm text-primary-600 dark:text-primary-400 hover:underline">
+                    {isImageAttachment(attachment)
+                      ? <ImageIcon className="w-5 h-5 text-gray-500 shrink-0" />
+                      : <FileTextIcon className="w-5 h-5 text-gray-500 shrink-0" />
                     }
                     <span className="ml-2 truncate">{attachment.name}</span>
-                    <span className="ml-auto text-xs text-gray-500">
+                    <span className="ml-auto text-xs text-gray-500 whitespace-nowrap">
                       {`(${(attachment.size / 1024).toFixed(1)} KB)`}
                     </span>
                   </a>
@@ -541,7 +743,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({ issue, onAddComment, onEdi
           </button>
         </form>
       </div>
-
-    </div>
+      </div>
+    </>
   );
 };

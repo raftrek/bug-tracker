@@ -185,12 +185,28 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
     setIssueData(prev => ({ ...prev, dependencies: selectedOptions }));
   };
 
-  const processFiles = (files: FileList) => {
-    const newAttachments: Attachment[] = Array.from(files).map((file) => ({
+  const readFileAsDataUrl = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const processFiles = async (files: FileList) => {
+    const selectedFiles = Array.from(files);
+    const encodedFiles = await Promise.all(
+      selectedFiles.map(async (file) => ({
+        file,
+        dataUrl: await readFileAsDataUrl(file),
+      }))
+    );
+    const newAttachments: Attachment[] = encodedFiles.map(({ file, dataUrl }) => ({
       name: file.name,
       type: file.type,
       size: file.size,
-      url: URL.createObjectURL(file),
+      url: dataUrl,
     }));
     setIssueData((prev) => ({
       ...prev,
@@ -207,17 +223,18 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
     setIsDraggingOver(false);
   };
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDraggingOver(false);
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      processFiles(e.dataTransfer.files);
+      await processFiles(e.dataTransfer.files);
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      processFiles(e.target.files);
+      await processFiles(e.target.files);
+      e.target.value = '';
     }
   };
 
@@ -231,12 +248,16 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!issueData.title) return;
+    const assignee = issueData.assignee
+      ? {
+        id: issueData.assignee.id,
+        name: issueData.assignee.name,
+        avatarUrl: issueData.assignee.avatarUrl || `https://i.pravatar.cc/150?u=${issueData.assignee.name.replace(/\s/g, '')}`,
+      }
+      : null;
     const finalData = {
       ...issueData,
-      assignee: {
-        name: issueData.assignee.name,
-        avatarUrl: `https://i.pravatar.cc/150?u=${issueData.assignee.name.replace(/\s/g, '')}`
-      }
+      assignee,
     };
     onCreateIssue(finalData);
   };
@@ -434,7 +455,12 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
               <div className="mt-2 space-y-2">
                 {issueData.attachments.map(file => (
                   <div key={file.name} className="flex items-center justify-between bg-neutral-50 dark:bg-neutral-900/50 p-2 rounded-md border border-neutral-100 dark:border-neutral-700">
-                    <span className="text-sm text-neutral-700 dark:text-neutral-300 truncate">{file.name}</span>
+                    <div className="flex items-center gap-3 min-w-0">
+                      {file.type.startsWith('image/') && (
+                        <img src={file.url} alt={file.name} className="w-10 h-10 rounded object-cover border border-neutral-200 dark:border-neutral-700" />
+                      )}
+                      <span className="text-sm text-neutral-700 dark:text-neutral-300 truncate">{file.name}</span>
+                    </div>
                     <button type="button" onClick={() => removeAttachment(file.name)} className="text-red-500 hover:text-red-700">
                       <CloseIcon className="w-4 h-4" />
                     </button>

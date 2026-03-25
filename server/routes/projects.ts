@@ -9,15 +9,26 @@ function getParam(value: string | string[] | undefined) {
     return Array.isArray(value) ? value[0] : value || '';
 }
 
+function parseJsonField(value: string | null) {
+    if (!value) return [];
+    try {
+        return JSON.parse(value);
+    } catch {
+        return [];
+    }
+}
+
 // Helper to format issue response
 function formatIssue(issue: any) {
     return {
         ...issue,
         assignee: issue.assignee ? {
+            id: issue.assignee.id,
             name: issue.assignee.name,
             avatarUrl: issue.assignee.avatarUrl || ''
-        } : { name: '', avatarUrl: '' },
-        tags: issue.tags ? JSON.parse(issue.tags) : [],
+        } : null,
+        tags: parseJsonField(issue.tags),
+        attachments: parseJsonField(issue.attachments),
         comments: issue.comments?.map((c: any) => ({
             id: c.id,
             text: c.text,
@@ -273,10 +284,9 @@ router.put('/:id/members/:userId', authenticateToken, async (req: AuthRequest, r
 // Create Issue
 router.post('/:id/issues', authenticateToken, async (req: AuthRequest, res) => {
     try {
-        const { title, type, description, priority, status, assigneeId, assignee, tags, startDate, endDate } = req.body;
+        const { title, type, description, priority, status, assigneeId, tags, attachments, startDate, endDate } = req.body;
         const projectId = getParam(req.params.id);
 
-        // Ignore assignee object if sent, only use assigneeId
         const issue = await prisma.issue.create({
             data: {
                 title,
@@ -286,7 +296,8 @@ router.post('/:id/issues', authenticateToken, async (req: AuthRequest, res) => {
                 status,
                 projectId,
                 assigneeId: assigneeId || null,
-                tags: tags ? JSON.stringify(tags) : undefined,
+                tags: tags !== undefined ? JSON.stringify(tags) : undefined,
+                attachments: attachments !== undefined ? JSON.stringify(attachments) : undefined,
                 startDate: startDate ? new Date(startDate) : undefined,
                 endDate: endDate ? new Date(endDate) : undefined
             },
@@ -310,7 +321,7 @@ router.post('/:id/issues', authenticateToken, async (req: AuthRequest, res) => {
 // Update Issue
 router.put('/:id/issues/:issueId', authenticateToken, async (req: AuthRequest, res) => {
     try {
-        const { title, type, description, priority, status, assigneeId, tags, startDate, endDate } = req.body;
+        const { title, type, description, priority, status, assigneeId, tags, attachments, startDate, endDate } = req.body;
         const issueId = getParam(req.params.issueId);
         const issue = await prisma.issue.update({
             where: { id: issueId },
@@ -321,7 +332,8 @@ router.put('/:id/issues/:issueId', authenticateToken, async (req: AuthRequest, r
                 priority,
                 status,
                 assigneeId: assigneeId !== undefined ? (assigneeId || null) : undefined,
-                tags: tags ? JSON.stringify(tags) : undefined,
+                tags: tags !== undefined ? JSON.stringify(tags) : undefined,
+                attachments: attachments !== undefined ? JSON.stringify(attachments) : undefined,
                 startDate: startDate ? new Date(startDate) : undefined,
                 endDate: endDate ? new Date(endDate) : undefined
             },

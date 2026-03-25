@@ -12,7 +12,7 @@ dist
 dist-ssr
 *.local
 release
-dist-electron/win-unpacked/release
+dist-electron
 
 # Editor directories and files
 .vscode/*

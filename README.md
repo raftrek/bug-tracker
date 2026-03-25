@@ -114,4 +114,9 @@ To build the application for a production environment (both macOS and Windows):
    ```bash
    # Example of starting the server script with Node (requires transpiling TypeScript first or using tsx/ts-node in prod)
    npx tsx server/index.ts
-   ```
+   ``
+   How to Rebuild
+
+- macOS only: npm run desktop:pack:mac
+- Windows only: npm run desktop:pack:win
+- both: npm run desktop:pack

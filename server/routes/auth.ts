@@ -9,15 +9,15 @@ import fs from 'fs';
 
 const router = express.Router();
 const prisma = new PrismaClient();
+const uploadDir = process.env.UPLOADS_DIR || 'uploads';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        const uploadDir = 'uploads';
         if (!fs.existsSync(uploadDir)) {
-            fs.mkdirSync(uploadDir);
+            fs.mkdirSync(uploadDir, { recursive: true });
         }
         cb(null, uploadDir);
     },

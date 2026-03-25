@@ -3,13 +3,17 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "main": "electron/main.mjs",
   "scripts": {
     "dev": "vite",
     "server": "tsx watch server/index.ts",
     "build": "npm run build:client && npm run build:server",
     "build:client": "vite build",
     "build:server": "tsc -p tsconfig.server.json",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "desktop:pack": "npm run build && electron-builder --mac dmg --win nsis",
+    "desktop:pack:mac": "npm run build && electron-builder --mac dmg",
+    "desktop:pack:win": "npm run build && electron-builder --win nsis"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",
@@ -34,10 +38,40 @@
     "@types/multer": "^2.0.0",
     "@types/node": "^22.19.1",
     "@vitejs/plugin-react": "^5.0.0",
+    "electron": "^37.6.0",
+    "electron-builder": "^26.0.12",
     "nodemon": "^3.1.11",
     "prisma": "^6.19.0",
     "ts-node": "^10.9.2",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
+  },
+  "build": {
+    "appId": "com.bugtracker.desktop",
+    "productName": "Bug Tracker",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "prisma/**/*",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "prisma/dev.db",
+      "node_modules/.prisma/**/*",
+      "node_modules/@prisma/**/*"
+    ],
+    "mac": {
+      "target": [
+        "dmg"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    }
   }
 }

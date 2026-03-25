@@ -27,6 +27,11 @@ A full-stack, Jira-like bug tracker application built with React, TypeScript, Ta
 - **UI/UX:**
   - Responsive design powered by Tailwind CSS.
   - Light/Dark mode toggling.
+- **Desktop Application (Electron):**
+  - Integrated Electron for a standalone desktop experience.
+  - Automated packaging for macOS (DMG) and Windows (NSIS).
+- **One-Click Development:**
+  - Simplified startup scripts for both Windows and macOS to launch the full stack instantly.
 
 ### ⏳ Partial / In-Progress Features
 - **Issue Attachments:** The database schema (`attachments` field in `Issue` model) supports attachments, but front-end file uploads for individual issues still require integration polish.
@@ -40,7 +45,22 @@ A full-stack, Jira-like bug tracker application built with React, TypeScript, Ta
 
 ---
 
-## 🚀 Getting Started (Windows & macOS)
+## 🚀 One-Click Quick Start (Recommended)
+
+To quickly start both the **Frontend** and **Backend** servers simultaneously, use the provided one-click scripts:
+
+### **For Windows:**
+1.  Locate `start-dev.bat` in the root directory.
+2.  Double-click the file to launch. Two terminal windows will open automatically (one for the server, one for the frontend).
+
+### **For macOS:**
+1.  Locate `start-dev.command` in the root directory.
+2.  Double-click the file to launch. It will open a new Terminal window and start both services.
+    *Note: If you get a permission error, run `chmod +x start-dev.command` in your terminal once.*
+
+---
+
+## 🛠 Getting Started (Manual Setup)
 
 ### Prerequisites
 Make sure you have [Node.js](https://nodejs.org/) (v18 or higher recommended) installed on your machine. You can verify your installation by running `node -v` in your terminal.

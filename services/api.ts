@@ -1,7 +1,12 @@
 import axios from 'axios';
 
+const apiHost = window.location.hostname || 'localhost';
+const apiProtocol = window.location.protocol || 'http:';
+const defaultApiBaseUrl = `${apiProtocol}//${apiHost}:3001/api`;
+const viteEnv = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
+
 const api = axios.create({
-    baseURL: 'http://localhost:3001/api',
+    baseURL: viteEnv?.VITE_API_BASE_URL || defaultApiBaseUrl,
 });
 
 api.interceptors.request.use((config) => {

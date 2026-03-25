@@ -67,10 +67,12 @@ export interface Issue {
   type: IssueType;
   description: string;
   priority: Priority;
-  assignee: {
+  assignee?: {
+    id: string;
     name: string;
-    avatarUrl: string;
-  };
+    avatarUrl?: string;
+  } | null;
+  assigneeId?: string | null;
   status: Status;
   startDate?: string;
   endDate?: string;

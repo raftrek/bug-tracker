@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getProjects } from '../services/projectService';
+import { getProjects, updateProject, deleteProject } from '../services/projectService';
 import { Project, ProjectStatus } from '../types';
-import { AddIcon, KanbanIcon, SettingsIcon } from '../components/icons';
+import { AddIcon, KanbanIcon, SettingsIcon, ArchiveIcon, TrashIcon } from '../components/icons';
 import { ThemeToggle } from '../components/ThemeToggle';
 
 const StatusBadge: React.FC<{ status: ProjectStatus }> = ({ status }) => {
@@ -48,6 +48,33 @@ export const ProjectsDashboard: React.FC = () => {
 
   const openProject = (project: Project) => {
     navigate(`/board/${project.id}`);
+  };
+
+  const handleArchive = async (e: React.MouseEvent, project: Project) => {
+    e.stopPropagation();
+    if (!window.confirm(`Are you sure you want to ${project.status === ProjectStatus.ARCHIVED ? 'restore' : 'archive'} this project?`)) return;
+    
+    try {
+      const newStatus = project.status === ProjectStatus.ARCHIVED ? ProjectStatus.ACTIVE : ProjectStatus.ARCHIVED;
+      const updated = await updateProject(project.id, { status: newStatus });
+      setProjects(projects.map(p => p.id === project.id ? updated : p));
+    } catch (err) {
+      console.error('Failed to archive project:', err);
+      alert('Failed to archive project. You might not have permission.');
+    }
+  };
+
+  const handleDelete = async (e: React.MouseEvent, project: Project) => {
+    e.stopPropagation();
+    if (!window.confirm(`Are you sure you want to PERMANENTLY delete project "${project.name}"? This action cannot be undone.`)) return;
+    
+    try {
+      await deleteProject(project.id);
+      setProjects(projects.filter(p => p.id !== project.id));
+    } catch (err) {
+      console.error('Failed to delete project:', err);
+      alert('Failed to delete project. You might not have permission.');
+    }
   };
 
   return (
@@ -112,16 +139,36 @@ export const ProjectsDashboard: React.FC = () => {
                   <StatusBadge status={p.status} />
                 </div>
                 <p className="text-sm text-neutral-600 dark:text-neutral-400 line-clamp-2">{p.description || 'No description provided.'}</p>
-                <div className="flex items-center justify-between mt-2 pt-3 border-t border-neutral-100 dark:border-neutral-700">
-                  <button
-                    onClick={() => openProject(p)}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600 transition-colors text-sm font-medium"
-                    title="Open Project Board"
-                  >
-                    <KanbanIcon className="w-4 h-4" />
-                    Open Board
-                  </button>
-                  <span className="text-xs text-neutral-400 dark:text-neutral-500">Created {new Date(p.createdAt).toLocaleDateString()}</span>
+                <div className="flex items-center justify-between mt-2 pt-3 border-t border-neutral-100 dark:border-neutral-700 gap-2">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => openProject(p)}
+                      className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600 transition-colors text-sm font-medium"
+                      title="Open Project Board"
+                    >
+                      <KanbanIcon className="w-4 h-4" />
+                      Open Board
+                    </button>
+                    <button
+                      onClick={(e) => handleArchive(e, p)}
+                      className={`flex items-center justify-center p-1.5 rounded-lg transition-colors ${
+                        p.status === ProjectStatus.ARCHIVED 
+                          ? 'bg-blue-50 text-blue-600 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-400' 
+                          : 'bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-600'
+                      }`}
+                      title={p.status === ProjectStatus.ARCHIVED ? "Restore Project" : "Archive Project"}
+                    >
+                      <ArchiveIcon className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={(e) => handleDelete(e, p)}
+                      className="flex items-center justify-center p-1.5 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+                      title="Delete Project"
+                    >
+                      <TrashIcon className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <span className="text-xs text-neutral-400 dark:text-neutral-500 whitespace-nowrap">Created {new Date(p.createdAt).toLocaleDateString()}</span>
                 </div>
               </div>
             ))}

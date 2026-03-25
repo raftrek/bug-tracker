@@ -133,6 +133,78 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res) => {
     }
 });
 
+// Update project
+router.put('/:id', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+        const projectId = getParam(req.params.id);
+        const { name, description, status, requiresAuth } = req.body;
+        
+        // Check if user is admin of this project
+        const member = await prisma.teamMember.findFirst({
+            where: {
+                projectId,
+                userId: req.userId,
+                role: 'Admin'
+            }
+        });
+
+        if (!member) {
+            return res.status(403).json({ error: 'Only admins can update projects' });
+        }
+
+        const project = await prisma.project.update({
+            where: { id: projectId },
+            data: {
+                name,
+                description,
+                status,
+                requiresAuth
+            },
+            include: {
+                members: {
+                    include: {
+                        user: true
+                    }
+                }
+            }
+        });
+        res.json(project);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to update project' });
+    }
+});
+
+// Delete project
+router.delete('/:id', authenticateToken, async (req: AuthRequest, res) => {
+    try {
+        const projectId = getParam(req.params.id);
+        
+        // Check if user is admin of this project
+        const member = await prisma.teamMember.findFirst({
+            where: {
+                projectId,
+                userId: req.userId,
+                role: 'Admin'
+            }
+        });
+
+        if (!member) {
+            return res.status(403).json({ error: 'Only admins can delete projects' });
+        }
+
+        // Delete all associated issues, comments, team members first (though Prisma handles cascading if configured)
+        // Let's rely on Prisma cascade if it exists, otherwise manual delete
+        await prisma.project.delete({
+            where: { id: projectId }
+        });
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Delete error:', error);
+        res.status(500).json({ error: 'Failed to delete project' });
+    }
+});
+
 // Add member
 router.post('/:id/members', authenticateToken, async (req: AuthRequest, res) => {
     try {

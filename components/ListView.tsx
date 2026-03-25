@@ -66,7 +66,6 @@ export const ListView: React.FC<ListViewProps> = ({ issues, onUpdateIssue, allIs
       <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700">
         <thead className="bg-neutral-50 dark:bg-neutral-900/50">
           <tr>
-            <SortableHeader sortKey="id">ID</SortableHeader>
             <SortableHeader sortKey="title">Title</SortableHeader>
             <SortableHeader sortKey="status">Status</SortableHeader>
             <SortableHeader sortKey="priority">Priority</SortableHeader>

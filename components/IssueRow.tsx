@@ -50,7 +50,10 @@ export const IssueRow: React.FC<IssueRowProps> = ({ issue, onUpdateIssue, allIss
   };
 
   const handleAssigneeChange = (value: string) => {
-    setEditFormData(prev => ({ ...prev, assignee: { ...prev.assignee, name: value } }));
+    setEditFormData(prev => ({ 
+      ...prev, 
+      assignee: prev.assignee ? { ...prev.assignee, name: value } : { id: '', name: value }
+    }));
   };
 
   const handleTagsChange = (tags: Tag[]) => {
@@ -61,10 +64,11 @@ export const IssueRow: React.FC<IssueRowProps> = ({ issue, onUpdateIssue, allIss
     const { id, createdAt, updatedAt, comments, ...updatedValues } = editFormData;
     const finalValues = {
       ...updatedValues,
-      assignee: {
+      assignee: updatedValues.assignee ? {
+        id: updatedValues.assignee.id,
         name: updatedValues.assignee.name,
-        avatarUrl: `https://i.pravatar.cc/150?u=${updatedValues.assignee.name.replace(/\s/g, '')}`
-      }
+        avatarUrl: updatedValues.assignee.avatarUrl || `https://i.pravatar.cc/150?u=${updatedValues.assignee.name.replace(/\s/g, '')}`
+      } : null
     };
     onUpdateIssue(id, finalValues);
     setIsEditing(false);
@@ -89,7 +93,6 @@ export const IssueRow: React.FC<IssueRowProps> = ({ issue, onUpdateIssue, allIss
   if (isEditing) {
     return (
       <tr className="bg-blue-50 dark:bg-blue-900/20">
-        <td className="px-4 py-3 text-sm font-mono text-neutral-500 dark:text-neutral-400 whitespace-nowrap">{issue.id}</td>
         <td className="px-4 py-3 whitespace-nowrap" style={{ minWidth: '200px' }}>
           <input
             type="text"
@@ -119,7 +122,7 @@ export const IssueRow: React.FC<IssueRowProps> = ({ issue, onUpdateIssue, allIss
         <td className="px-4 py-3 whitespace-nowrap">
           <input
             type="text"
-            value={editFormData.assignee.name}
+            value={editFormData.assignee?.name || ''}
             onChange={(e) => handleAssigneeChange(e.target.value)}
             className="w-full bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm p-1.5 text-sm text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
@@ -144,7 +147,6 @@ export const IssueRow: React.FC<IssueRowProps> = ({ issue, onUpdateIssue, allIss
 
   return (
     <tr className="hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors">
-      <td className="px-4 py-3 text-sm font-mono text-neutral-500 dark:text-neutral-400 whitespace-nowrap">{issue.id}</td>
       <td className="px-4 py-3 text-sm font-medium text-neutral-900 dark:text-neutral-100 whitespace-nowrap">{issue.title}</td>
       <td className="px-4 py-3 text-sm text-neutral-500 dark:text-neutral-400 whitespace-nowrap">
         <StatusPill status={issue.status} />
@@ -153,10 +155,14 @@ export const IssueRow: React.FC<IssueRowProps> = ({ issue, onUpdateIssue, allIss
         <PriorityIndicator priority={issue.priority} />
       </td>
       <td className="px-4 py-3 text-sm text-neutral-500 dark:text-neutral-400 whitespace-nowrap">
-        <div className="flex items-center gap-2">
-          <img src={issue.assignee.avatarUrl} alt={issue.assignee.name} className="w-6 h-6 rounded-full" />
-          <span>{issue.assignee.name}</span>
-        </div>
+        {issue.assignee ? (
+          <div className="flex items-center gap-2">
+            <img src={issue.assignee.avatarUrl || `https://i.pravatar.cc/150?u=${issue.assignee.name.replace(/\s/g, '')}`} alt={issue.assignee.name} className="w-6 h-6 rounded-full" />
+            <span>{issue.assignee.name}</span>
+          </div>
+        ) : (
+          <span className="text-gray-400 italic">Unassigned</span>
+        )}
       </td>
       <td className="px-4 py-3 whitespace-nowrap">
         <div className="flex flex-wrap gap-1">

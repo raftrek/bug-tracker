@@ -27,6 +27,20 @@ export async function createProject(input: {
   return response.data;
 }
 
+export async function updateProject(id: string, input: Partial<{
+  name: string;
+  description: string;
+  status: ProjectStatus;
+  requiresAuth: boolean;
+}>): Promise<Project> {
+  const response = await api.put(`/projects/${id}`, input);
+  return response.data;
+}
+
+export async function deleteProject(id: string): Promise<void> {
+  await api.delete(`/projects/${id}`);
+}
+
 export async function addMemberToProject(projectId: string, email: string, role: Role): Promise<void> {
   await api.post(`/projects/${projectId}/members`, { email, role });
 }

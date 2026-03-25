@@ -106,7 +106,9 @@ export const IssueCard: React.FC<IssueCardProps> = ({ issue, onAddComment, onEdi
     if (selectedUser) {
       setEditFormData(prev => ({
         ...prev,
+        assigneeId: selectedUser.id,
         assignee: {
+          id: selectedUser.id,
           name: selectedUser.name,
           avatarUrl: selectedUser.avatarUrl || `https://i.pravatar.cc/150?u=${selectedUser.name.replace(/\s/g, '')}`
         }
@@ -115,7 +117,8 @@ export const IssueCard: React.FC<IssueCardProps> = ({ issue, onAddComment, onEdi
       // If no user is selected (empty value), clear assignee but keep the structure
       setEditFormData(prev => ({
         ...prev,
-        assignee: { name: '', avatarUrl: '' }
+        assigneeId: null,
+        assignee: null
       }));
     }
   };
@@ -135,10 +138,12 @@ export const IssueCard: React.FC<IssueCardProps> = ({ issue, onAddComment, onEdi
 
     const finalValues = {
       ...updatedValues,
-      assignee: {
+      assigneeId: updatedValues.assigneeId,
+      assignee: updatedValues.assignee ? {
+        id: updatedValues.assignee.id,
         name: updatedValues.assignee.name,
         avatarUrl: updatedValues.assignee.avatarUrl
-      }
+      } : null
     };
 
     onUpdateIssue(id, finalValues);
@@ -185,8 +190,11 @@ export const IssueCard: React.FC<IssueCardProps> = ({ issue, onAddComment, onEdi
     });
   };
 
-  const dependencyTooltip = issue.dependencies?.join(', ');
-  const blockingTooltip = blockingIssues.map(i => i.id).join(', ');
+  const dependencyTooltip = issue.dependencies?.map(depId => {
+    const dep = allIssues.find(i => i.id === depId);
+    return dep ? dep.title : depId;
+  }).join(', ');
+  const blockingTooltip = blockingIssues.map(i => i.title).join(', ');
 
   const dateDisplay = [
     issue.startDate && `Start: ${formatDate(issue.startDate)}`,
@@ -229,10 +237,8 @@ export const IssueCard: React.FC<IssueCardProps> = ({ issue, onAddComment, onEdi
             <label className="text-xs font-bold text-gray-600">Assignee</label>
             <select
               value={(() => {
-                // Find the user ID based on the current assignee name
-                const allUsers = [currentUser, ...teamMembers.map(m => m.user)].filter(Boolean) as User[];
-                const matchingUser = allUsers.find(u => u.name === editFormData.assignee.name);
-                return matchingUser?.id || '';
+                // Find the user ID based on the current assignee ID
+                return editFormData.assigneeId || '';
               })()}
               onChange={(e) => handleAssigneeChange(e.target.value)}
               className="mt-1 block w-full px-2 py-1 bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-sm text-neutral-900 dark:text-neutral-100"
@@ -294,7 +300,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({ issue, onAddComment, onEdi
             className="block w-full h-24 text-sm bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-900 dark:text-neutral-100"
           >
             {availableDependencies.map(dep => (
-              <option key={dep.id} value={dep.id}>{dep.id}: {dep.title}</option>
+              <option key={dep.id} value={dep.id}>{dep.title}</option>
             ))}
           </select>
         </div>
@@ -352,7 +358,6 @@ export const IssueCard: React.FC<IssueCardProps> = ({ issue, onAddComment, onEdi
     >
       <div className="flex justify-between items-start">
         <h3 className="font-bold text-neutral-900 dark:text-neutral-100 mb-2 pr-2">{issue.title}</h3>
-        <span className="text-xs text-neutral-400 dark:text-neutral-500 font-mono">{issue.id}</span>
       </div>
       <p
         className="text-sm text-neutral-600 dark:text-neutral-400 mb-4"
@@ -435,12 +440,14 @@ export const IssueCard: React.FC<IssueCardProps> = ({ issue, onAddComment, onEdi
                 <BrainCircuitIcon className="w-5 h-5" />
               )}
             </button>
-            <img
-              src={issue.assignee.avatarUrl}
-              alt={issue.assignee.name}
-              title={issue.assignee.name}
-              className="w-8 h-8 rounded-full border-2 border-white dark:border-neutral-700"
-            />
+            {issue.assignee && (
+              <img
+                src={issue.assignee.avatarUrl || `https://i.pravatar.cc/150?u=${issue.assignee.name.replace(/\s/g, '')}`}
+                alt={issue.assignee.name}
+                title={issue.assignee.name}
+                className="w-8 h-8 rounded-full border-2 border-white dark:border-neutral-700"
+              />
+            )}
           </div>
         </div>
         {/* Bottom row: Dates */}

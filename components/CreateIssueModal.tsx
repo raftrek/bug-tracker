@@ -22,7 +22,8 @@ const DEFAULT_ISSUE_STATE: Omit<Issue, 'id' | 'status' | 'updatedAt'> = {
   type: IssueTypeEnum.TASK,
   description: '',
   priority: PriorityEnum.MEDIUM,
-  assignee: { name: '', avatarUrl: '' },
+  assignee: null,
+  assigneeId: null,
   startDate: '',
   endDate: '',
   comments: [],
@@ -135,7 +136,9 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
     if (selectedUser) {
       setIssueData(prev => ({
         ...prev,
+        assigneeId: selectedUser.id,
         assignee: {
+          id: selectedUser.id,
           name: selectedUser.name,
           avatarUrl: selectedUser.avatarUrl || `https://i.pravatar.cc/150?u=${selectedUser.name.replace(/\s/g, '')}`
         }
@@ -144,7 +147,8 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
       // If no user is selected (empty value), clear assignee
       setIssueData(prev => ({
         ...prev,
-        assignee: { name: '', avatarUrl: '' }
+        assigneeId: null,
+        assignee: null
       }));
     }
   };
@@ -347,10 +351,8 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
               <select
                 id="assignee"
                 value={(() => {
-                  // Find the user ID based on the current assignee name
-                  const allUsers = [currentUser, ...teamMembers.map(m => m.user)].filter(Boolean) as User[];
-                  const matchingUser = allUsers.find(u => u.name === issueData.assignee.name);
-                  return matchingUser?.id || '';
+                  // Find the user ID based on the current assignee ID
+                  return issueData.assigneeId || '';
                 })()}
                 onChange={(e) => handleAssigneeChange(e.target.value)}
                 className="block w-full text-sm bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-900 dark:text-neutral-100 p-2"
@@ -403,7 +405,7 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
               className="block w-full h-24 text-sm bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-900 dark:text-neutral-100 p-2"
             >
               {availableDependencies.map(dep => (
-                <option key={dep.id} value={dep.id}>{dep.id}: {dep.title}</option>
+                <option key={dep.id} value={dep.id}>{dep.title}</option>
               ))}
             </select>
           </div>

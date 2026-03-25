@@ -5,6 +5,10 @@ import { authenticateToken, AuthRequest } from '../middleware/auth.js';
 const router = express.Router();
 const prisma = new PrismaClient();
 
+function getParam(value: string | string[] | undefined) {
+    return Array.isArray(value) ? value[0] : value || '';
+}
+
 // Helper to format issue response
 function formatIssue(issue: any) {
     return {
@@ -85,8 +89,9 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
 // Get project details
 router.get('/:id', authenticateToken, async (req: AuthRequest, res) => {
     try {
+        const projectId = getParam(req.params.id);
         const project = await prisma.project.findUnique({
-            where: { id: req.params.id },
+            where: { id: projectId },
             include: {
                 members: {
                     include: {
@@ -132,7 +137,7 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res) => {
 router.post('/:id/members', authenticateToken, async (req: AuthRequest, res) => {
     try {
         const { email, role } = req.body;
-        const projectId = req.params.id;
+        const projectId = getParam(req.params.id);
 
         // Find user by email
         const userToAdd = await prisma.user.findUnique({ where: { email } });
@@ -160,10 +165,11 @@ router.post('/:id/members', authenticateToken, async (req: AuthRequest, res) => 
 // Remove member
 router.delete('/:id/members/:userId', authenticateToken, async (req: AuthRequest, res) => {
     try {
-        const { id, userId } = req.params;
+        const projectId = getParam(req.params.id);
+        const userId = getParam(req.params.userId);
         await prisma.teamMember.deleteMany({
             where: {
-                projectId: id,
+                projectId,
                 userId: userId
             }
         });
@@ -176,11 +182,12 @@ router.delete('/:id/members/:userId', authenticateToken, async (req: AuthRequest
 // Update member role
 router.put('/:id/members/:userId', authenticateToken, async (req: AuthRequest, res) => {
     try {
-        const { id, userId } = req.params;
+        const projectId = getParam(req.params.id);
+        const userId = getParam(req.params.userId);
         const { role } = req.body;
         const member = await prisma.teamMember.updateMany({
             where: {
-                projectId: id,
+                projectId,
                 userId: userId
             },
             data: { role }
@@ -195,6 +202,7 @@ router.put('/:id/members/:userId', authenticateToken, async (req: AuthRequest, r
 router.post('/:id/issues', authenticateToken, async (req: AuthRequest, res) => {
     try {
         const { title, type, description, priority, status, assigneeId, assignee, tags, startDate, endDate } = req.body;
+        const projectId = getParam(req.params.id);
 
         // Ignore assignee object if sent, only use assigneeId
         const issue = await prisma.issue.create({
@@ -204,7 +212,7 @@ router.post('/:id/issues', authenticateToken, async (req: AuthRequest, res) => {
                 description,
                 priority,
                 status,
-                projectId: req.params.id,
+                projectId,
                 assigneeId: assigneeId || null,
                 tags: tags ? JSON.stringify(tags) : undefined,
                 startDate: startDate ? new Date(startDate) : undefined,
@@ -231,8 +239,9 @@ router.post('/:id/issues', authenticateToken, async (req: AuthRequest, res) => {
 router.put('/:id/issues/:issueId', authenticateToken, async (req: AuthRequest, res) => {
     try {
         const { title, type, description, priority, status, assigneeId, tags, startDate, endDate } = req.body;
+        const issueId = getParam(req.params.issueId);
         const issue = await prisma.issue.update({
-            where: { id: req.params.issueId },
+            where: { id: issueId },
             data: {
                 title,
                 type,
@@ -263,10 +272,11 @@ router.put('/:id/issues/:issueId', authenticateToken, async (req: AuthRequest, r
 router.post('/:id/issues/:issueId/comments', authenticateToken, async (req: AuthRequest, res) => {
     try {
         const { text } = req.body;
+        const issueId = getParam(req.params.issueId);
         const comment = await prisma.comment.create({
             data: {
                 text,
-                issueId: req.params.issueId,
+                issueId,
                 authorId: req.userId!
             },
             include: {
@@ -294,8 +304,9 @@ router.post('/:id/issues/:issueId/comments', authenticateToken, async (req: Auth
 router.put('/:id/issues/:issueId/comments/:commentId', authenticateToken, async (req: AuthRequest, res) => {
     try {
         const { text } = req.body;
+        const commentId = getParam(req.params.commentId);
         const comment = await prisma.comment.update({
-            where: { id: req.params.commentId },
+            where: { id: commentId },
             data: { text },
             include: {
                 author: true
@@ -321,8 +332,9 @@ router.put('/:id/issues/:issueId/comments/:commentId', authenticateToken, async 
 // Delete Comment
 router.delete('/:id/issues/:issueId/comments/:commentId', authenticateToken, async (req: AuthRequest, res) => {
     try {
+        const commentId = getParam(req.params.commentId);
         await prisma.comment.delete({
-            where: { id: req.params.commentId }
+            where: { id: commentId }
         });
         res.json({ success: true });
     } catch (error) {

@@ -19,6 +19,10 @@ const RegisterPage: React.FC = () => {
             login(response.data.token, response.data.user);
             navigate('/projects');
         } catch (err: any) {
+            if (!err.response) {
+                setError('Cannot connect to server. Make sure backend is running on port 3001.');
+                return;
+            }
             setError(err.response?.data?.error || 'Registration failed');
         }
     };

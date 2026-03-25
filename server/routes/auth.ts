@@ -1,5 +1,5 @@
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
@@ -33,20 +33,27 @@ const upload = multer({ storage: storage });
 router.post('/register', async (req, res) => {
     try {
         const { email, password, name } = req.body;
+        const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+        const trimmedName = typeof name === 'string' ? name.trim() : '';
+        const normalizedPassword = typeof password === 'string' ? password : '';
 
-        const existingUser = await prisma.user.findUnique({ where: { email } });
+        if (!normalizedEmail || !normalizedPassword || !trimmedName) {
+            return res.status(400).json({ error: 'Name, email, and password are required' });
+        }
+
+        const existingUser = await prisma.user.findUnique({ where: { email: normalizedEmail } });
         if (existingUser) {
             return res.status(400).json({ error: 'User already exists' });
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await bcrypt.hash(normalizedPassword, 10);
 
         const user = await prisma.user.create({
             data: {
-                email,
+                email: normalizedEmail,
                 password: hashedPassword,
-                name,
-                avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`,
+                name: trimmedName,
+                avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(trimmedName)}&background=random`,
             },
         });
 
@@ -55,6 +62,12 @@ router.post('/register', async (req, res) => {
         res.status(201).json({ token, user: { id: user.id, name: user.name, email: user.email, avatarUrl: user.avatarUrl } });
     } catch (error) {
         console.error('Registration error:', error);
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+            return res.status(400).json({ error: 'User already exists' });
+        }
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2021') {
+            return res.status(500).json({ error: 'Database is not initialized' });
+        }
         res.status(500).json({ error: 'Registration failed' });
     }
 });

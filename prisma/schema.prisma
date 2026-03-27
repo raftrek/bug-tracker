@@ -70,6 +70,9 @@ model Issue {
   comments    Comment[]
   tags        Tag[]
   attachments Attachment[]
+
+  dependencies   Issue[] @relation("IssueDependencies")
+  dependentOn    Issue[] @relation("IssueDependencies")
 }
 
 model Tag {

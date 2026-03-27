@@ -19,18 +19,18 @@ This project is a web-based bug tracking application similar to Jira, packaged w
 - **Issue Attachments**: Full upload integration using Multer, storing relational Attachment records instead of JSON strings.
 - **Tags System**: Database normalization for tags to a separate `Tag` model, fully integrated with issue tracking.
 - **Commenting System**: Real-time comment additions on issues.
-- **AI Integration**: AI-driven issue summarization using Google Gemini.
+- **AI Integration**: 
+  - AI-driven issue summarization using Google Gemini.
+  - **Intelligent Auto-Assignment**: Analyzes issue descriptions to suggest the best team member.
+  - **Duplicate Detection**: Prevents clutter by checking for similar existing issues before creation.
+  - **Natural Language Search**: Allows conversational search queries (e.g., "bugs related to login").
+  - **Chat with Project**: A chatbot interface for querying project status.
 - **Desktop Application**: Automated packaging for macOS and Windows via Electron.
 
 ### ⏳ Partially Implemented
 - None at the moment.
 
 ### 🚧 To Implement (Missing Features)
-#### 🚀 AI Enhancements
-- **Intelligent Auto-Assignment**: Analyze issue descriptions to suggest the best team member.
-- **Duplicate Detection**: Prevent clutter by checking for similar existing issues before creation.
-- **Natural Language Search**: Allow conversational search queries (e.g., "bugs related to login").
-- **Chat with Project**: A chatbot interface for querying project status.
 
 #### ⚡ Real-time Collaboration
 - **WebSockets (Socket.io)**: Replace REST API polling with real-time updates for the Kanban board and comments.

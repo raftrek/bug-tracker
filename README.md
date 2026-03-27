@@ -26,7 +26,11 @@ A full-stack, Jira-like bug tracker application built with React, TypeScript, Ta
 - **Commenting System:** 
   - Add, edit, and delete real-time comments on specific issues.
 - **AI Integration (Google Gemini):**
-  - AI-driven issue summarization and actionable "Next Steps" generation for complex bug reports or tasks using the `@google/genai` SDK.
+  - **Issue Summarization:** AI-driven summarization and actionable "Next Steps" generation for complex bug reports or tasks.
+  - **Intelligent Auto-Assignment:** Automatically suggest the best team member to assign an issue to based on its description and team roles.
+  - **Duplicate Detection:** Check for existing similar issues before creating a new one to prevent clutter.
+  - **Natural Language Search:** Find issues using conversational queries (e.g., "show me bugs assigned to Alice").
+  - **Project Chat:** An embedded chatbot to answer questions about the current project context, issues, and status.
 - **UI/UX:**
   - Responsive design powered by Tailwind CSS.
   - Light/Dark mode toggling.
@@ -40,7 +44,6 @@ A full-stack, Jira-like bug tracker application built with React, TypeScript, Ta
 - None at the moment.
 
 ### 🚧 To Implement (Missing Features / Improvements)
-- **Advanced AI Enhancements:** Auto-assignment based on descriptions, Duplicate Detection, Natural Language Search, and Chat with Project queries.
 - **Real-Time Updates (WebSockets):** Currently relies on REST API polling or manual refreshes. Implementing `Socket.io` would make the Kanban board collaborative in real-time.
 - **Global Search:** Full-text search across all projects, issues, and comments.
 - **Email/Push Notifications:** Notify users when they are assigned to an issue, mentioned in a comment, or when a project role changes.
@@ -89,7 +92,7 @@ Make sure you have [Node.js](https://nodejs.org/) (v18 or higher recommended) in
    DATABASE_URL="file:./dev.db"
    JWT_SECRET="supersecretkeychangeinproduction"
    PORT=3001
-   API_KEY="your_google_gemini_api_key_here" # Required for AI Issue Summarization
+   API_KEY="your_google_gemini_api_key_here" # Required for AI Issue Summarization, Auto-Assignment, Chat, etc.
    ```
 
 4. **Initialize the Database (SQLite via Prisma):**
@@ -123,6 +126,9 @@ npm run dev
 5. Create your first issue, assign a priority, and add some tags.
 6. Test the drag-and-drop Kanban board by moving the issue from "TODO" to "IN PROGRESS".
 7. Click the AI icon (Brain circuit) on an issue card to test the Gemini summary feature (ensure your `API_KEY` is valid).
+8. Use the **Natural Language Search** in the project board filter area.
+9. Try **Auto-Assign** and **Check Duplicates** when creating new issues.
+10. Use the **Chat** button to interact with the project context.
 
 ### 4. Building for Production
 

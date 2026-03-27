@@ -1,11 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { TagInput } from './TagInput';
-import { CloseIcon, UploadIcon, TrashIcon } from './icons';
+import { DependencyInput } from './DependencyInput';
+import { CloseIcon, UploadIcon, TrashIcon, BrainCircuitIcon } from './icons';
 import { DatePicker } from './DatePicker';
 import type { Issue, IssueTemplate, Priority, Tag, Attachment, IssueType, User, TeamMember } from '../types';
 import { Status, Priority as PriorityEnum, IssueType as IssueTypeEnum } from '../types';
 import { getAllTemplates, saveCustomTemplate, deleteCustomTemplate } from '../services/templateService';
 import { uploadFiles } from '../services/projectService';
+import { suggestAssignee, detectDuplicates } from '../services/geminiService';
 
 interface CreateIssueModalProps {
   isOpen: boolean;
@@ -50,6 +52,11 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
   const [newTemplateName, setNewTemplateName] = useState('');
   const [templateMsg, setTemplateMsg] = useState<string>('');
 
+  const [isAutoAssigning, setIsAutoAssigning] = useState(false);
+  const [isCheckingDuplicates, setIsCheckingDuplicates] = useState(false);
+  const [duplicateIds, setDuplicateIds] = useState<string[]>([]);
+  const [duplicateMessage, setDuplicateMessage] = useState('');
+
   const baseTemplateNames = useMemo(() => new Set((issueTemplates || []).map(t => t.name)), [issueTemplates]);
 
   useEffect(() => {
@@ -59,6 +66,8 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
         setSelectedTemplate('');
         setNewTemplateName('');
         setTemplateMsg('');
+        setDuplicateIds([]);
+        setDuplicateMessage('');
       }, 300);
     }
   }, [isOpen]);
@@ -154,6 +163,44 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
     }
   };
 
+  const handleAutoAssign = async () => {
+    if (!issueData.title && !issueData.description) return;
+    setIsAutoAssigning(true);
+    try {
+      const suggestedId = await suggestAssignee(issueData.title, issueData.description, teamMembers);
+      if (suggestedId) {
+        handleAssigneeChange(suggestedId);
+      } else {
+        alert("Could not determine a suitable assignee.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to auto-assign.");
+    } finally {
+      setIsAutoAssigning(false);
+    }
+  };
+
+  const handleCheckDuplicates = async () => {
+    if (!issueData.title && !issueData.description) return;
+    setIsCheckingDuplicates(true);
+    setDuplicateMessage('');
+    try {
+      const duplicates = await detectDuplicates(issueData.title, issueData.description, allIssues);
+      setDuplicateIds(duplicates);
+      if (duplicates.length > 0) {
+        setDuplicateMessage(`Found ${duplicates.length} potential duplicate(s): ${duplicates.join(', ')}`);
+      } else {
+        setDuplicateMessage('No duplicates found.');
+      }
+    } catch (err) {
+      console.error(err);
+      setDuplicateMessage('Failed to check for duplicates.');
+    } finally {
+      setIsCheckingDuplicates(false);
+    }
+  };
+
   const handleTagsChange = (tags: Tag[]) => {
     setIssueData(prev => ({ ...prev, tags }));
   };
@@ -179,11 +226,6 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
       setTemplateMsg('Failed to delete template.');
       setTimeout(() => setTemplateMsg(''), 2000);
     }
-  };
-
-  const handleDependencyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedOptions = Array.from(e.target.selectedOptions, (option: HTMLOptionElement) => option.value);
-    setIssueData(prev => ({ ...prev, dependencies: selectedOptions }));
   };
 
   const processFiles = async (files: FileList) => {
@@ -309,7 +351,18 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
             )}
           </div>
           <div>
-            <label htmlFor="title" className="text-sm font-bold text-gray-600 mb-1 block">Title</label>
+            <div className="flex justify-between items-center mb-1">
+              <label htmlFor="title" className="text-sm font-bold text-gray-600">Title</label>
+              <button 
+                type="button" 
+                onClick={handleCheckDuplicates} 
+                disabled={isCheckingDuplicates || (!issueData.title && !issueData.description)}
+                className="text-xs text-primary-600 hover:text-primary-700 flex items-center gap-1 disabled:opacity-50"
+              >
+                <BrainCircuitIcon className="w-3 h-3" />
+                {isCheckingDuplicates ? 'Checking...' : 'Check Duplicates'}
+              </button>
+            </div>
             <input
               id="title"
               type="text"
@@ -318,6 +371,11 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
               required
               className="block w-full text-sm bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-900 dark:text-neutral-100 p-2"
             />
+            {duplicateMessage && (
+              <div className={`mt-2 p-2 text-xs rounded-md ${duplicateIds.length > 0 ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800' : 'bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-800'}`}>
+                {duplicateMessage}
+              </div>
+            )}
           </div>
           <div>
             <label htmlFor="type" className="text-sm font-bold text-gray-600 mb-1 block">Type</label>
@@ -353,7 +411,18 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
               </select>
             </div>
             <div>
-              <label htmlFor="assignee" className="text-sm font-bold text-gray-600 mb-1 block">Assignee</label>
+              <div className="flex justify-between items-center mb-1">
+                <label htmlFor="assignee" className="text-sm font-bold text-gray-600">Assignee</label>
+                <button 
+                  type="button" 
+                  onClick={handleAutoAssign} 
+                  disabled={isAutoAssigning || teamMembers.length === 0 || (!issueData.title && !issueData.description)}
+                  className="text-xs text-primary-600 hover:text-primary-700 flex items-center gap-1 disabled:opacity-50"
+                >
+                  <BrainCircuitIcon className="w-3 h-3" />
+                  {isAutoAssigning ? 'Assigning...' : 'Auto-Assign'}
+                </button>
+              </div>
               <select
                 id="assignee"
                 value={(() => {
@@ -402,18 +471,12 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
             />
           </div>
           <div>
-            <label htmlFor="dependencies" className="text-sm font-bold text-gray-600 mb-1 block">Dependencies</label>
-            <select
-              id="dependencies"
-              multiple
-              value={issueData.dependencies || []}
-              onChange={handleDependencyChange}
-              className="block w-full h-24 text-sm bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-900 dark:text-neutral-100 p-2"
-            >
-              {availableDependencies.map(dep => (
-                <option key={dep.id} value={dep.id}>{dep.title}</option>
-              ))}
-            </select>
+            <label className="text-sm font-bold text-gray-600 mb-1 block">Dependencies</label>
+            <DependencyInput
+              allIssues={availableDependencies}
+              selectedDependencyIds={issueData.dependencies || []}
+              onChange={(deps) => handleChange('dependencies', deps)}
+            />
           </div>
           <div>
             <label className="text-sm font-bold text-gray-600 mb-1 block">Attachments</label>

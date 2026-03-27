@@ -3,12 +3,14 @@ import { useParams, Link } from 'react-router-dom';
 import { Board } from '../components/Board';
 import { CreateIssueModal } from '../components/CreateIssueModal';
 import { TeamModal } from '../components/TeamModal';
-import { AddIcon, KanbanIcon, ListIcon } from '../components/icons';
+import { AddIcon, KanbanIcon, ListIcon, BrainCircuitIcon } from '../components/icons';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { ALL_TAGS, ISSUE_TEMPLATES } from '../constants';
 import { Status, Priority, type Issue, type ColumnData, type Tag, type Project } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { ListView } from '../components/ListView';
+import { ProjectChatModal } from '../components/ProjectChatModal';
+import { naturalLanguageSearch } from '../services/geminiService';
 import {
   getProjectById,
   createIssue,
@@ -32,6 +34,12 @@ const ProjectBoardPage: React.FC = () => {
   const [assigneeFilter, setAssigneeFilter] = useState<string>('All');
   const [tagFilter, setTagFilter] = useState<string>('All');
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
+
+  const [nlSearchQuery, setNlSearchQuery] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
+  const [nlSearchResults, setNlSearchResults] = useState<string[] | null>(null);
+
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   const loadProjectData = useCallback(async () => {
     if (!projectId) return;
@@ -201,9 +209,34 @@ const ProjectBoardPage: React.FC = () => {
       const priorityMatch = priorityFilter === 'All' || issue.priority === priorityFilter;
       const assigneeMatch = assigneeFilter === 'All' || (issue.assignee?.name || 'Unassigned') === assigneeFilter;
       const tagMatch = tagFilter === 'All' || issue.tags?.some(tag => tag.name === tagFilter);
-      return priorityMatch && assigneeMatch && tagMatch;
+      const nlMatch = nlSearchResults === null || nlSearchResults.includes(issue.id);
+      return priorityMatch && assigneeMatch && tagMatch && nlMatch;
     });
-  }, [issues, priorityFilter, assigneeFilter, tagFilter]);
+  }, [issues, priorityFilter, assigneeFilter, tagFilter, nlSearchResults]);
+
+  const handleNlSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!nlSearchQuery.trim()) {
+      setNlSearchResults(null);
+      return;
+    }
+    setIsSearching(true);
+    try {
+      const results = await naturalLanguageSearch(nlSearchQuery, issues);
+      setNlSearchResults(results);
+    } catch (err) {
+      console.error(err);
+      setNlSearchResults([]); // Show nothing if failed, or could show all. Better to show alert.
+      alert("Failed to perform natural language search.");
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleClearSearch = () => {
+    setNlSearchQuery('');
+    setNlSearchResults(null);
+  };
 
   const boardData = useMemo<ColumnData[]>(() => {
     const todoIssues = filteredIssues.filter(issue => issue.status === Status.TODO);
@@ -268,6 +301,13 @@ const ProjectBoardPage: React.FC = () => {
             </button>
             <Link to="/projects" className="px-4 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600 transition-colors text-sm font-medium">Back to Projects</Link>
             <button
+              onClick={() => setIsChatOpen(true)}
+              className="flex items-center gap-2 bg-indigo-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm text-sm"
+            >
+              <BrainCircuitIcon className="w-4 h-4" />
+              Chat
+            </button>
+            <button
               onClick={() => setIsModalOpen(true)}
               className="flex items-center gap-2 bg-primary-600 text-white font-semibold px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors shadow-sm text-sm"
             >
@@ -279,7 +319,7 @@ const ProjectBoardPage: React.FC = () => {
       </header>
       <main className="p-4 sm:p-6 container mx-auto">
         <div className="bg-white dark:bg-neutral-800 rounded-xl shadow-sm border border-neutral-200 dark:border-neutral-700 p-4 mb-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-4">
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-4 w-full xl:w-auto flex-1">
             <span className="font-semibold text-neutral-700 dark:text-neutral-300">Filter by:</span>
             <div className="flex items-center gap-2">
               <label htmlFor="priority-filter" className="text-sm font-medium text-neutral-500 dark:text-neutral-400">Priority</label>
@@ -315,6 +355,39 @@ const ProjectBoardPage: React.FC = () => {
                 <option value="All">All</option>
                 {availableTags.map(tag => <option key={tag.name} value={tag.name}>{tag.name}</option>)}
               </select>
+            </div>
+            
+            <div className="flex-1 min-w-[200px] ml-4">
+              <form onSubmit={handleNlSearch} className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <BrainCircuitIcon className="h-4 w-4 text-neutral-400" />
+                  </div>
+                  <input
+                    type="text"
+                    value={nlSearchQuery}
+                    onChange={(e) => setNlSearchQuery(e.target.value)}
+                    placeholder="Natural language search (e.g., 'bugs assigned to me')"
+                    className="block w-full pl-9 pr-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-lg leading-5 bg-neutral-50 dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+                  />
+                  {nlSearchResults !== null && (
+                    <button
+                      type="button"
+                      onClick={handleClearSearch}
+                      className="absolute inset-y-0 right-0 pr-3 flex items-center text-neutral-400 hover:text-neutral-600"
+                    >
+                      <span className="text-xs font-semibold">Clear</span>
+                    </button>
+                  )}
+                </div>
+                <button
+                  type="submit"
+                  disabled={isSearching || !nlSearchQuery.trim()}
+                  className="px-3 py-2 bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-lg hover:bg-neutral-300 dark:hover:bg-neutral-600 disabled:opacity-50 text-sm font-medium transition-colors"
+                >
+                  {isSearching ? 'Searching...' : 'Search'}
+                </button>
+              </form>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -376,6 +449,14 @@ const ProjectBoardPage: React.FC = () => {
           isOpen={isTeamModalOpen}
           onClose={() => setIsTeamModalOpen(false)}
           onUpdate={handleTeamUpdate}
+        />
+      )}
+      {project && isChatOpen && (
+        <ProjectChatModal
+          isOpen={isChatOpen}
+          onClose={() => setIsChatOpen(false)}
+          project={project}
+          issues={issues}
         />
       )}
     </div>

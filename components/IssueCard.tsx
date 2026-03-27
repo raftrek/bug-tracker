@@ -5,6 +5,7 @@ import { generateIssueSummary } from '../services/geminiService';
 import { uploadFiles } from '../services/projectService';
 import { BrainCircuitIcon, SendIcon, CloseIcon, LockIcon, LinkIcon, PencilIcon, FileTextIcon, ImageIcon, TrashIcon, MaximizeIcon, MinimizeIcon, UploadIcon } from './icons';
 import { TagInput } from './TagInput';
+import { DependencyInput } from './DependencyInput';
 import { DatePicker } from './DatePicker';
 
 interface IssueCardProps {
@@ -171,12 +172,6 @@ export const IssueCard: React.FC<IssueCardProps> = ({ issue, onAddComment, onEdi
 
   const handleTagsChange = (tags: Tag[]) => {
     setEditFormData(prev => ({ ...prev, tags }));
-  };
-
-  const handleDependencyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    // FIX: Explicitly type `option` as HTMLOptionElement to fix type inference issue.
-    const selectedOptions = Array.from(e.target.selectedOptions, (option: HTMLOptionElement) => option.value);
-    setEditFormData(prev => ({ ...prev, dependencies: selectedOptions }));
   };
 
   const readFileAsDataUrl = (file: File): Promise<string> => {
@@ -387,16 +382,11 @@ export const IssueCard: React.FC<IssueCardProps> = ({ issue, onAddComment, onEdi
               Clear
             </button>
           </div>
-          <select
-            multiple
-            value={editFormData.dependencies || []}
-            onChange={handleDependencyChange}
-            className="block w-full h-24 text-sm bg-white dark:bg-neutral-900 border border-neutral-300 dark:border-neutral-600 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-900 dark:text-neutral-100"
-          >
-            {availableDependencies.map(dep => (
-              <option key={dep.id} value={dep.id}>{dep.title}</option>
-            ))}
-          </select>
+          <DependencyInput
+            allIssues={availableDependencies}
+            selectedDependencyIds={editFormData.dependencies || []}
+            onChange={(deps) => setEditFormData(prev => ({ ...prev, dependencies: deps }))}
+          />
         </div>
         <div>
           <label className="text-xs font-bold text-gray-600">Attachments</label>

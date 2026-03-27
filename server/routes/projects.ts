@@ -74,6 +74,7 @@ function formatIssue(issue: any) {
         } : null,
         tags: issue.tags || [],
         attachments: issue.attachments || [],
+        dependencies: issue.dependencies?.map((dep: any) => dep.id) || [],
         comments: issue.comments?.map((c: any) => ({
             id: c.id,
             text: c.text,
@@ -168,6 +169,7 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res) => {
                         assignee: true,
                         tags: true,
                         attachments: true,
+                        dependencies: true,
                         comments: {
                             include: {
                                 author: true
@@ -369,7 +371,7 @@ router.put('/:id/members/:userId', authenticateToken, async (req: AuthRequest, r
 // Create Issue
 router.post('/:id/issues', authenticateToken, async (req: AuthRequest, res) => {
     try {
-        const { title, type, description, priority, status, assigneeId, tags, attachments, startDate, endDate } = req.body;
+        const { title, type, description, priority, status, assigneeId, tags, attachments, startDate, endDate, dependencies } = req.body;
         const projectId = getParam(req.params.id);
 
         const issue = await prisma.issue.create({
@@ -396,12 +398,16 @@ router.post('/:id/issues', authenticateToken, async (req: AuthRequest, res) => {
                         type: att.type,
                         size: att.size
                     }))
+                } : undefined,
+                dependencies: dependencies && dependencies.length > 0 ? {
+                    connect: dependencies.map((id: string) => ({ id }))
                 } : undefined
             },
             include: {
                 assignee: true,
                 tags: true,
                 attachments: true,
+                dependencies: true,
                 comments: {
                     include: {
                         author: true
@@ -420,7 +426,7 @@ router.post('/:id/issues', authenticateToken, async (req: AuthRequest, res) => {
 // Update Issue
 router.put('/:id/issues/:issueId', authenticateToken, async (req: AuthRequest, res) => {
     try {
-        const { title, type, description, priority, status, assigneeId, tags, attachments, startDate, endDate } = req.body;
+        const { title, type, description, priority, status, assigneeId, tags, attachments, startDate, endDate, dependencies } = req.body;
         const issueId = getParam(req.params.issueId);
         const issue = await prisma.issue.update({
             where: { id: issueId },
@@ -448,12 +454,16 @@ router.put('/:id/issues/:issueId', authenticateToken, async (req: AuthRequest, r
                         type: att.type,
                         size: att.size
                     }))
+                } : undefined,
+                dependencies: dependencies !== undefined ? {
+                    set: dependencies.map((id: string) => ({ id }))
                 } : undefined
             },
             include: {
                 assignee: true,
                 tags: true,
                 attachments: true,
+                dependencies: true,
                 comments: {
                     include: {
                         author: true

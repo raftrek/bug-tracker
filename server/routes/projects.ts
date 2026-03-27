@@ -26,6 +26,21 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
+router.post('/upload', authenticateToken, upload.array('files'), (req, res) => {
+    try {
+        const files = req.files as Express.Multer.File[];
+        const uploadedFiles = files.map(file => ({
+            name: file.originalname,
+            type: file.mimetype,
+            size: file.size,
+            url: `/uploads/${file.filename}`
+        }));
+        res.json(uploadedFiles);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to upload files' });
+    }
+});
+
 function getParam(value: string | string[] | undefined) {
     return Array.isArray(value) ? value[0] : value || '';
 }
@@ -57,8 +72,8 @@ function formatIssue(issue: any) {
             name: issue.assignee.name,
             avatarUrl: issue.assignee.avatarUrl || ''
         } : null,
-        tags: parseJsonField(issue.tags),
-        attachments: parseJsonField(issue.attachments),
+        tags: issue.tags || [],
+        attachments: issue.attachments || [],
         comments: issue.comments?.map((c: any) => ({
             id: c.id,
             text: c.text,
@@ -151,6 +166,8 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res) => {
                 issues: {
                     include: {
                         assignee: true,
+                        tags: true,
+                        attachments: true,
                         comments: {
                             include: {
                                 author: true
@@ -364,13 +381,27 @@ router.post('/:id/issues', authenticateToken, async (req: AuthRequest, res) => {
                 status,
                 projectId,
                 assigneeId: assigneeId || null,
-                tags: tags !== undefined ? JSON.stringify(tags) : undefined,
-                attachments: attachments !== undefined ? JSON.stringify(attachments) : undefined,
                 startDate: startDate ? new Date(startDate) : undefined,
-                endDate: endDate ? new Date(endDate) : undefined
+                endDate: endDate ? new Date(endDate) : undefined,
+                tags: tags ? {
+                    create: tags.map((tag: any) => ({
+                        name: tag.name,
+                        color: tag.color
+                    }))
+                } : undefined,
+                attachments: attachments ? {
+                    create: attachments.map((att: any) => ({
+                        name: att.name,
+                        url: att.url,
+                        type: att.type,
+                        size: att.size
+                    }))
+                } : undefined
             },
             include: {
                 assignee: true,
+                tags: true,
+                attachments: true,
                 comments: {
                     include: {
                         author: true
@@ -400,13 +431,29 @@ router.put('/:id/issues/:issueId', authenticateToken, async (req: AuthRequest, r
                 priority,
                 status,
                 assigneeId: assigneeId !== undefined ? (assigneeId || null) : undefined,
-                tags: tags !== undefined ? JSON.stringify(tags) : undefined,
-                attachments: attachments !== undefined ? JSON.stringify(attachments) : undefined,
                 startDate: startDate ? new Date(startDate) : undefined,
-                endDate: endDate ? new Date(endDate) : undefined
+                endDate: endDate ? new Date(endDate) : undefined,
+                tags: tags ? {
+                    deleteMany: {},
+                    create: tags.map((tag: any) => ({
+                        name: tag.name,
+                        color: tag.color
+                    }))
+                } : undefined,
+                attachments: attachments ? {
+                    deleteMany: {},
+                    create: attachments.map((att: any) => ({
+                        name: att.name,
+                        url: att.url,
+                        type: att.type,
+                        size: att.size
+                    }))
+                } : undefined
             },
             include: {
                 assignee: true,
+                tags: true,
+                attachments: true,
                 comments: {
                     include: {
                         author: true

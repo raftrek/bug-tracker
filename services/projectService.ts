@@ -98,6 +98,19 @@ export async function updateComment(projectId: string, issueId: string, commentI
   return response.data;
 }
 
+export async function uploadFiles(files: FileList | File[]): Promise<Array<{ name: string; type: string; size: number; url: string }>> {
+  const formData = new FormData();
+  Array.from(files).forEach((file) => {
+    formData.append('files', file);
+  });
+  const response = await api.post('/projects/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+}
+
 export async function deleteComment(projectId: string, issueId: string, commentId: string): Promise<void> {
   await api.delete(`/projects/${projectId}/issues/${issueId}/comments/${commentId}`);
 }

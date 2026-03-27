@@ -5,6 +5,7 @@ import { DatePicker } from './DatePicker';
 import type { Issue, IssueTemplate, Priority, Tag, Attachment, IssueType, User, TeamMember } from '../types';
 import { Status, Priority as PriorityEnum, IssueType as IssueTypeEnum } from '../types';
 import { getAllTemplates, saveCustomTemplate, deleteCustomTemplate } from '../services/templateService';
+import { uploadFiles } from '../services/projectService';
 
 interface CreateIssueModalProps {
   isOpen: boolean;
@@ -185,33 +186,17 @@ export const CreateIssueModal: React.FC<CreateIssueModalProps> = ({
     setIssueData(prev => ({ ...prev, dependencies: selectedOptions }));
   };
 
-  const readFileAsDataUrl = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
-      reader.onerror = () => reject(reader.error);
-      reader.readAsDataURL(file);
-    });
-  };
-
   const processFiles = async (files: FileList) => {
-    const selectedFiles = Array.from(files);
-    const encodedFiles = await Promise.all(
-      selectedFiles.map(async (file) => ({
-        file,
-        dataUrl: await readFileAsDataUrl(file),
-      }))
-    );
-    const newAttachments: Attachment[] = encodedFiles.map(({ file, dataUrl }) => ({
-      name: file.name,
-      type: file.type,
-      size: file.size,
-      url: dataUrl,
-    }));
-    setIssueData((prev) => ({
-      ...prev,
-      attachments: [...(prev.attachments || []), ...newAttachments],
-    }));
+    try {
+      const uploadedAttachments = await uploadFiles(files);
+      setIssueData((prev) => ({
+        ...prev,
+        attachments: [...(prev.attachments || []), ...uploadedAttachments],
+      }));
+    } catch (error) {
+      console.error('Failed to upload attachments:', error);
+      alert('Failed to upload attachments.');
+    }
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {

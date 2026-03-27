@@ -20,6 +20,9 @@ A full-stack, Jira-like bug tracker application built with React, TypeScript, Ta
 - **Issue Creation & Details:**
   - Create issues using pre-defined or custom templates.
   - Assign properties like Title, Type (Task, Bug, Feature), Description, Priority, Assignee, Tags, and Date Ranges.
+  - Upload file attachments directly to issues (stored via backend).
+- **Database Architecture:**
+  - Relational `Tag` and `Attachment` data models seamlessly tied to Issues.
 - **Commenting System:** 
   - Add, edit, and delete real-time comments on specific issues.
 - **AI Integration (Google Gemini):**
@@ -34,8 +37,7 @@ A full-stack, Jira-like bug tracker application built with React, TypeScript, Ta
   - Simplified startup scripts for both Windows and macOS to launch the full stack instantly.
 
 ### ⏳ Partial / In-Progress Features
-- **Issue Attachments:** The database schema (`attachments` field in `Issue` model) supports attachments, but front-end file uploads for individual issues still require integration polish.
-- **Tags System:** Tag inputs are present in the UI and stored as JSON strings, but advanced tag filtering/search logic could be expanded.
+- None at the moment.
 
 ### 🚧 To Implement (Missing Features / Improvements)
 - **Advanced AI Enhancements:** Auto-assignment based on descriptions, Duplicate Detection, Natural Language Search, and Chat with Project queries.
@@ -43,7 +45,7 @@ A full-stack, Jira-like bug tracker application built with React, TypeScript, Ta
 - **Global Search:** Full-text search across all projects, issues, and comments.
 - **Email/Push Notifications:** Notify users when they are assigned to an issue, mentioned in a comment, or when a project role changes.
 - **Advanced Analytics/Reporting:** Velocity tracking, Burn-down charts, and time-tracking features.
-- **Backend Architecture & Code Quality:** Normalize tags/attachments data models, implement request validation (e.g., Zod), centralized error handling, and API pagination.
+- **Backend Architecture & Code Quality:** Implement request validation (e.g., Zod), centralized error handling, and API pagination.
 - **Frontend Architecture & Optimizations:** Adopt server-state caching (e.g., React Query), add lazy loading/code splitting, rate limiting, and database indexing.
 
 ---

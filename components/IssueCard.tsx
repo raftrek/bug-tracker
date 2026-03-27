@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import type { Issue, Comment, Tag, TeamMember, User, Attachment } from '../types';
 import { Priority, Status } from '../types';
 import { generateIssueSummary } from '../services/geminiService';
+import { uploadFiles } from '../services/projectService';
 import { BrainCircuitIcon, SendIcon, CloseIcon, LockIcon, LinkIcon, PencilIcon, FileTextIcon, ImageIcon, TrashIcon, MaximizeIcon, MinimizeIcon, UploadIcon } from './icons';
 import { TagInput } from './TagInput';
 import { DatePicker } from './DatePicker';

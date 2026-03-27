@@ -16,13 +16,14 @@ This project is a web-based bug tracking application similar to Jira, packaged w
 - **Project Management**: Create/Edit projects, Team member invitation system with Role-Based Access Control (Admin, Member, Viewer).
 - **Issue Tracking & Kanban Board**: Drag-and-drop board, customizable statuses (TODO, IN PROGRESS, READY FOR TEST, DONE), List View.
 - **Issue Properties**: Title, Type, Description, Priority, Assignee, Date Ranges, Dependencies (Blockers logic).
+- **Issue Attachments**: Full upload integration using Multer, storing relational Attachment records instead of JSON strings.
+- **Tags System**: Database normalization for tags to a separate `Tag` model, fully integrated with issue tracking.
 - **Commenting System**: Real-time comment additions on issues.
 - **AI Integration**: AI-driven issue summarization using Google Gemini.
 - **Desktop Application**: Automated packaging for macOS and Windows via Electron.
 
 ### ⏳ Partially Implemented
-- **Issue Attachments**: The database schema supports `attachments` as a JSON string. The frontend has basic logic to display them, but the full upload integration for individual issues needs polish.
-- **Tags System**: Tag inputs exist in the UI and are stored as JSON strings in the database. However, advanced tag filtering and database normalization (e.g., a separate `Tag` model) are not fully developed.
+- None at the moment.
 
 ### 🚧 To Implement (Missing Features)
 #### 🚀 AI Enhancements
@@ -44,7 +45,6 @@ This project is a web-based bug tracking application similar to Jira, packaged w
 ## 3. Improvements (Code Quality & Architecture)
 
 ### 🛠 Backend & Database
-- **Data Modeling**: Refactor `tags` and `attachments` from JSON strings to separate models with proper relations to `Issue`.
 - **Input Validation**: Integrate **Zod** or **Joi** to validate API request bodies.
 - **Error Handling**: Create a centralized error handling middleware and custom Error classes (`ValidationError`, `NotFoundError`).
 - **Pagination**: Implement cursor-based or offset-based pagination on `GET /projects/:id` to handle large numbers of issues.
@@ -64,7 +64,6 @@ This project is a web-based bug tracking application similar to Jira, packaged w
 - **Sanitization**: Ensure Markdown inputs in descriptions and comments are sanitized to prevent XSS.
 
 ## 5. Summary of Actionable Next Steps
-1.  **Refactor Database**: Normalize `tags` and `attachments`.
-2.  **Add Pagination**: Update the `GET /projects/:id` endpoint.
-3.  **Implement Validation**: Add Zod middleware to backend routes.
-4.  **Setup Real-time**: Install `socket.io` and implement board/comment event emitters.
+1.  **Add Pagination**: Update the `GET /projects/:id` endpoint.
+2.  **Implement Validation**: Add Zod middleware to backend routes.
+3.  **Setup Real-time**: Install `socket.io` and implement board/comment event emitters.

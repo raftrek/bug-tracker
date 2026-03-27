@@ -68,8 +68,30 @@ model Issue {
   assignee    User?    @relation("AssignedIssues", fields: [assigneeId], references: [id])
   
   comments    Comment[]
-  tags        String? // JSON string for tags
-  attachments String? // JSON string for attachments
+  tags        Tag[]
+  attachments Attachment[]
+}
+
+model Tag {
+  id        String   @id @default(uuid())
+  name      String
+  color     String?
+  issueId   String
+  issue     Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
+
+  @@unique([name, issueId])
+}
+
+model Attachment {
+  id        String   @id @default(uuid())
+  name      String
+  url       String
+  type      String?
+  size      Int?
+  createdAt DateTime @default(now())
+  
+  issueId   String
+  issue     Issue    @relation(fields: [issueId], references: [id], onDelete: Cascade)
 }
 
 model Comment {

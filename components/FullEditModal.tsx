@@ -4,6 +4,7 @@ import { DatePicker } from './DatePicker';
 import { CloseIcon, UploadIcon, FileTextIcon, ImageIcon, MinimizeIcon } from './icons';
 import type { Issue, Tag, Priority, User, TeamMember, Attachment } from '../types';
 import { Status, Priority as PriorityEnum } from '../types';
+import { uploadFiles } from '../services/projectService';
 
 interface FullEditModalProps {
   issue: Issue;
@@ -66,33 +67,17 @@ export const FullEditModal: React.FC<FullEditModalProps> = ({
     setEditFormData(prev => ({ ...prev, dependencies: selectedOptions }));
   };
 
-  const readFileAsDataUrl = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
-      reader.onerror = () => reject(reader.error);
-      reader.readAsDataURL(file);
-    });
-  };
-
   const processEditAttachments = async (files: FileList) => {
-    const selectedFiles = Array.from(files);
-    const encodedFiles = await Promise.all(
-      selectedFiles.map(async (file) => ({
-        file,
-        dataUrl: await readFileAsDataUrl(file),
-      }))
-    );
-    const attachments: Attachment[] = encodedFiles.map(({ file, dataUrl }) => ({
-      name: file.name,
-      type: file.type,
-      size: file.size,
-      url: dataUrl,
-    }));
-    setEditFormData(prev => ({
-      ...prev,
-      attachments: [...(prev.attachments || []), ...attachments],
-    }));
+    try {
+      const uploadedAttachments = await uploadFiles(files);
+      setEditFormData(prev => ({
+        ...prev,
+        attachments: [...(prev.attachments || []), ...uploadedAttachments],
+      }));
+    } catch (error) {
+      console.error('Failed to upload attachments:', error);
+      alert('Failed to upload attachments.');
+    }
   };
 
   const handleEditAttachmentChange = async (e: React.ChangeEvent<HTMLInputElement>) => {

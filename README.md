@@ -37,11 +37,14 @@ A full-stack, Jira-like bug tracker application built with React, TypeScript, Ta
 - **Issue Attachments:** The database schema (`attachments` field in `Issue` model) supports attachments, but front-end file uploads for individual issues still require integration polish.
 - **Tags System:** Tag inputs are present in the UI and stored as JSON strings, but advanced tag filtering/search logic could be expanded.
 
-### 🚧 To Implement (Missing Features)
+### 🚧 To Implement (Missing Features / Improvements)
+- **Advanced AI Enhancements:** Auto-assignment based on descriptions, Duplicate Detection, Natural Language Search, and Chat with Project queries.
 - **Real-Time Updates (WebSockets):** Currently relies on REST API polling or manual refreshes. Implementing `Socket.io` would make the Kanban board collaborative in real-time.
 - **Global Search:** Full-text search across all projects, issues, and comments.
 - **Email/Push Notifications:** Notify users when they are assigned to an issue, mentioned in a comment, or when a project role changes.
 - **Advanced Analytics/Reporting:** Velocity tracking, Burn-down charts, and time-tracking features.
+- **Backend Architecture & Code Quality:** Normalize tags/attachments data models, implement request validation (e.g., Zod), centralized error handling, and API pagination.
+- **Frontend Architecture & Optimizations:** Adopt server-state caching (e.g., React Query), add lazy loading/code splitting, rate limiting, and database indexing.
 
 ---
 

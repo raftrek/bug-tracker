@@ -1,65 +1,70 @@
 # Project Analysis Report: Jira Clone / Bug Tracker
 
 ## 1. Project Overview
-This project is a web-based bug tracking application similar to Jira.
-- **Frontend**: React (Vite), React Router, Tailwind CSS.
-- **Backend**: Node.js, Express.
+This project is a web-based bug tracking application similar to Jira, packaged with a complete tech stack.
+- **Frontend**: React 19 (Vite), React Router, Tailwind CSS.
+- **Backend**: Node.js, Express 5.
 - **Database**: SQLite with Prisma ORM.
 - **Authentication**: JWT-based (bcryptjs, jsonwebtoken).
-- **AI Integration**: Google Gemini API for issue summarization.
+- **AI Integration**: Google Gemini API for issue summarization (`@google/genai`).
+- **Desktop Build**: Electron with electron-builder (macOS DMG, Windows NSIS).
 
-## 2. Proposed New Features
+## 2. Feature Implementation Status
 
-### 🚀 AI Enhancements
-- **Intelligent Auto-Assignment**: Use Gemini to analyze the issue description and suggest the best team member based on past tasks.
-- **Duplicate Detection**: Check for similar existing issues before creating a new one to prevent clutter.
-- **Natural Language Search**: Allow users to search for "bugs related to login" instead of exact keyword matching.
-- **Chat with Project**: A chatbot interface to ask questions about project status (e.g., "How many high-priority bugs are open?").
+### ✅ Fully Implemented
+- **Authentication & User Management**: User Registration, Login (JWT), Profile settings, Avatar uploads via Multer.
+- **Project Management**: Create/Edit projects, Team member invitation system with Role-Based Access Control (Admin, Member, Viewer).
+- **Issue Tracking & Kanban Board**: Drag-and-drop board, customizable statuses (TODO, IN PROGRESS, READY FOR TEST, DONE), List View.
+- **Issue Properties**: Title, Type, Description, Priority, Assignee, Date Ranges, Dependencies (Blockers logic).
+- **Commenting System**: Real-time comment additions on issues.
+- **AI Integration**: AI-driven issue summarization using Google Gemini.
+- **Desktop Application**: Automated packaging for macOS and Windows via Electron.
 
-### ⚡ Real-time Collaboration
-- **WebSockets (Socket.io)**: Implement real-time updates for the Kanban board. When one user moves a card, it should update instantly for everyone.
+### ⏳ Partially Implemented
+- **Issue Attachments**: The database schema supports `attachments` as a JSON string. The frontend has basic logic to display them, but the full upload integration for individual issues needs polish.
+- **Tags System**: Tag inputs exist in the UI and are stored as JSON strings in the database. However, advanced tag filtering and database normalization (e.g., a separate `Tag` model) are not fully developed.
+
+### 🚧 To Implement (Missing Features)
+#### 🚀 AI Enhancements
+- **Intelligent Auto-Assignment**: Analyze issue descriptions to suggest the best team member.
+- **Duplicate Detection**: Prevent clutter by checking for similar existing issues before creation.
+- **Natural Language Search**: Allow conversational search queries (e.g., "bugs related to login").
+- **Chat with Project**: A chatbot interface for querying project status.
+
+#### ⚡ Real-time Collaboration
+- **WebSockets (Socket.io)**: Replace REST API polling with real-time updates for the Kanban board and comments.
 - **Live User Presence**: Show who is currently viewing or editing an issue.
 
-### 🔔 Notifications & Workflow
-- **In-App & Email Notifications**: Notify users when they are assigned an issue or mentioned in a comment.
-- **Audit Logs**: Track who changed what and when (history of changes).
+#### 🔔 Notifications & Workflow
+- **In-App & Email Notifications**: Notify users when assigned an issue, mentioned, or on status changes.
+- **Audit Logs**: Track historical changes (who changed what and when).
+- **Global Search**: Full-text search across all projects, issues, and comments.
+- **Advanced Analytics**: Velocity tracking, Burn-down charts, and time-tracking.
 
 ## 3. Improvements (Code Quality & Architecture)
 
 ### 🛠 Backend & Database
-- **Data Modeling**: 
-  - Currently, `tags` and `attachments` are stored as JSON strings. This makes querying difficult (e.g., "Find all issues with tag 'urgent'").
-  - **Recommendation**: Refactor `tags` to a separate `Tag` model with a many-to-many relation to `Issue`.
-- **Input Validation**:
-  - No validation library is used for API requests.
-  - **Recommendation**: Integrate **Zod** or **Joi** to validate request bodies (e.g., ensure `priority` is one of the allowed values).
-- **Error Handling**:
-  - Current error handling is generic (`res.status(500)`).
-  - **Recommendation**: Create a centralized error handling middleware and custom Error classes (e.g., `ValidationError`, `NotFoundError`).
-- **Pagination**:
-  - The `GET /projects/:id` endpoint fetches *all* issues for a project.
-  - **Recommendation**: Implement pagination (cursor-based or offset-based) to handle large numbers of issues.
+- **Data Modeling**: Refactor `tags` and `attachments` from JSON strings to separate models with proper relations to `Issue`.
+- **Input Validation**: Integrate **Zod** or **Joi** to validate API request bodies.
+- **Error Handling**: Create a centralized error handling middleware and custom Error classes (`ValidationError`, `NotFoundError`).
+- **Pagination**: Implement cursor-based or offset-based pagination on `GET /projects/:id` to handle large numbers of issues.
 
 ### 🎨 Frontend
-- **State Management**:
-  - As the app grows, `Context` might become a performance bottleneck.
-  - **Recommendation**: Consider **TanStack Query (React Query)** for server state management (caching, loading states) and **Zustand** for complex global client state.
-- **Code Splitting**:
-  - All pages are imported eagerly in `App.tsx`.
-  - **Recommendation**: Use `React.lazy` and `Suspense` to lazy load pages and reduce initial bundle size.
+- **State Management**: Introduce **TanStack Query (React Query)** for server state caching/loading and **Zustand** for complex global client state instead of relying purely on Context.
+- **Code Splitting**: Use `React.lazy` and `Suspense` in `App.tsx` to lazy load pages and reduce the initial bundle size.
 
 ## 4. Optimizations
 
 ### 🏎 Performance
-- **Database Indexing**: Ensure Prisma schema defines indexes on frequently queried fields (e.g., `assigneeId`, `projectId`, `status`).
-- **Asset Optimization**: Serve static assets (images, avatars) via a CDN or optimized static file serving strategy (currently served from `uploads/`).
+- **Database Indexing**: Add Prisma schema indexes on frequently queried fields (`assigneeId`, `projectId`, `status`).
+- **Asset Optimization**: Serve static assets via a CDN or optimized serving strategy instead of the basic `/uploads` route.
 
 ### 🔒 Security
-- **Rate Limiting**: Implement `express-rate-limit` to prevent abuse of the API (especially the Login and AI endpoints).
-- **Sanitization**: Ensure all user inputs (especially Markdown in descriptions/comments) are sanitized to prevent XSS.
+- **Rate Limiting**: Implement `express-rate-limit` to prevent abuse (especially on Login and AI endpoints).
+- **Sanitization**: Ensure Markdown inputs in descriptions and comments are sanitized to prevent XSS.
 
 ## 5. Summary of Actionable Next Steps
 1.  **Refactor Database**: Normalize `tags` and `attachments`.
 2.  **Add Pagination**: Update the `GET /projects/:id` endpoint.
 3.  **Implement Validation**: Add Zod middleware to backend routes.
-4.  **Setup Real-time**: Install `socket.io` and basic event emitters for board updates.
+4.  **Setup Real-time**: Install `socket.io` and implement board/comment event emitters.

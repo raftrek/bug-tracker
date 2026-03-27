@@ -7,7 +7,7 @@ import path from 'path';
 import fs from 'fs';
 
 const router = express.Router();
-const prisma = new PrismaClient();
+const prisma: any = new PrismaClient();
 const uploadDir = process.env.UPLOADS_DIR || 'uploads';
 
 // Configure multer for file uploads
@@ -185,7 +185,7 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res) => {
         }
 
         // Check access
-        const isMember = project.members.some(m => m.userId === req.userId);
+        const isMember = project.members.some((m: any) => m.userId === req.userId);
         if (!isMember && project.requiresAuth) {
             return res.status(403).json({ error: 'Access denied' });
         }

@@ -89,20 +89,51 @@ const ProjectBoardPage: React.FC = () => {
 
   const handleUpdateIssue = useCallback(async (issueId: string, updatedValues: Partial<Omit<Issue, 'id'>>) => {
     // Optimistic update
-    setIssues(prevIssues => prevIssues.map(issue => {
-      if (issue.id === issueId) {
-        if (updatedValues.tags) {
-          const newTags = updatedValues.tags.filter(
-            (tag) => !availableTags.some((existingTag) => existingTag.name === tag.name)
-          );
-          if (newTags.length > 0) {
-            setAvailableTags(prevTags => [...prevTags, ...newTags]);
-          }
+    setIssues(prevIssues => {
+      const newIssues = prevIssues.map(issue => {
+        if (issue.id === issueId) {
+          return { ...issue, ...updatedValues, updatedAt: new Date().toISOString() };
         }
-        return { ...issue, ...updatedValues, updatedAt: new Date().toISOString() };
+        return issue;
+      });
+
+      // If tags were updated, we should also update the color of these tags in other issues locally
+      if (updatedValues.tags) {
+        setAvailableTags(prevTags => {
+          const updatedTags = [...prevTags];
+          updatedValues.tags!.forEach(newTag => {
+            const existingIndex = updatedTags.findIndex(t => t.name === newTag.name);
+            if (existingIndex >= 0) {
+              // Update color if changed
+              updatedTags[existingIndex] = newTag;
+            } else {
+              updatedTags.push(newTag);
+            }
+          });
+          return updatedTags;
+        });
+
+        const updatedTagMap = new Map(updatedValues.tags.map(t => [t.name, t.color]));
+        return newIssues.map(issue => {
+          if (issue.id !== issueId && issue.tags) {
+            let changed = false;
+            const updatedIssueTags = issue.tags.map(t => {
+              if (updatedTagMap.has(t.name) && updatedTagMap.get(t.name) !== t.color) {
+                changed = true;
+                return { ...t, color: updatedTagMap.get(t.name)! };
+              }
+              return t;
+            });
+            if (changed) {
+              return { ...issue, tags: updatedIssueTags };
+            }
+          }
+          return issue;
+        });
       }
-      return issue;
-    }));
+
+      return newIssues;
+    });
 
     try {
       if (projectId) {
@@ -180,12 +211,36 @@ const ProjectBoardPage: React.FC = () => {
       });
 
       if (newIssueData.tags) {
-        const newTags = newIssueData.tags.filter(
-          (tag) => !availableTags.some((existingTag) => existingTag.name === tag.name)
-        );
-        if (newTags.length > 0) {
-          setAvailableTags(prevTags => [...prevTags, ...newTags]);
-        }
+        setAvailableTags(prevTags => {
+          const updatedTags = [...prevTags];
+          newIssueData.tags!.forEach(newTag => {
+            const existingIndex = updatedTags.findIndex(t => t.name === newTag.name);
+            if (existingIndex >= 0) {
+              updatedTags[existingIndex] = newTag;
+            } else {
+              updatedTags.push(newTag);
+            }
+          });
+          return updatedTags;
+        });
+
+        const updatedTagMap = new Map(newIssueData.tags.map(t => [t.name, t.color]));
+        setIssues(prevIssues => prevIssues.map(issue => {
+          if (issue.tags) {
+            let changed = false;
+            const updatedIssueTags = issue.tags.map(t => {
+              if (updatedTagMap.has(t.name) && updatedTagMap.get(t.name) !== t.color) {
+                changed = true;
+                return { ...t, color: updatedTagMap.get(t.name)! };
+              }
+              return t;
+            });
+            if (changed) {
+              return { ...issue, tags: updatedIssueTags };
+            }
+          }
+          return issue;
+        }));
       }
 
       setIssues(prevIssues => [createdIssue, ...prevIssues]);

@@ -416,6 +416,24 @@ router.post('/:id/issues', authenticateToken, async (req: AuthRequest, res) => {
             }
         });
 
+        if (tags) {
+            for (const tag of tags) {
+                if (tag.color) {
+                    await prisma.tag.updateMany({
+                        where: {
+                            name: tag.name,
+                            issue: {
+                                projectId: projectId
+                            }
+                        },
+                        data: {
+                            color: tag.color
+                        }
+                    });
+                }
+            }
+        }
+
         res.json(formatIssue(issue));
     } catch (error) {
         console.error('Failed to create issue:', error);
@@ -471,6 +489,26 @@ router.put('/:id/issues/:issueId', authenticateToken, async (req: AuthRequest, r
                 }
             }
         });
+
+        if (tags) {
+            const projectId = getParam(req.params.id);
+            for (const tag of tags) {
+                if (tag.color) {
+                    await prisma.tag.updateMany({
+                        where: {
+                            name: tag.name,
+                            issue: {
+                                projectId: projectId
+                            }
+                        },
+                        data: {
+                            color: tag.color
+                        }
+                    });
+                }
+            }
+        }
+
         res.json(formatIssue(issue));
     } catch (error) {
         res.status(500).json({ error: 'Failed to update issue' });

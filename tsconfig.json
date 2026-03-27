@@ -25,5 +25,21 @@
     },
     "allowImportingTsExtensions": true,
     "noEmit": true
-  }
+  },
+  "include": [
+    "components/**/*",
+    "contexts/**/*",
+    "electron/**/*",
+    "hooks/**/*",
+    "lib/**/*",
+    "pages/**/*",
+    "App.tsx",
+    "main.tsx",
+    "vite.config.ts"
+  ],
+  "exclude": [
+    "server/**/*",
+    "dist/**/*",
+    "node_modules/**/*"
+  ]
 }

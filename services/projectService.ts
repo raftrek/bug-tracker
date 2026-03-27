@@ -42,8 +42,32 @@ export async function deleteProject(id: string): Promise<void> {
   await api.delete(`/projects/${id}`);
 }
 
-export async function addMemberToProject(projectId: string, email: string, role: Role): Promise<void> {
-  await api.post(`/projects/${projectId}/members`, { email, role });
+export async function addMemberToProject(
+  projectId: string, 
+  email: string, 
+  role: Role, 
+  name?: string, 
+  password?: string,
+  bio?: string,
+  avatar?: File | null
+): Promise<void> {
+  if (name && password) {
+    const formData = new FormData();
+    formData.append('email', email);
+    formData.append('role', role);
+    formData.append('name', name);
+    formData.append('password', password);
+    if (bio) formData.append('bio', bio);
+    if (avatar) formData.append('avatar', avatar);
+
+    await api.post(`/projects/${projectId}/members`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  } else {
+    await api.post(`/projects/${projectId}/members`, { email, role });
+  }
 }
 
 export async function removeMemberFromProject(projectId: string, userId: string): Promise<void> {

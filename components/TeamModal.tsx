@@ -12,6 +12,11 @@ interface TeamModalProps {
 export const TeamModal: React.FC<TeamModalProps> = ({ project, isOpen, onClose, onUpdate }) => {
     const [email, setEmail] = useState('');
     const [role, setRole] = useState<Role>(Role.MEMBER);
+    const [isNewUser, setIsNewUser] = useState(false);
+    const [name, setName] = useState('');
+    const [password, setPassword] = useState('');
+    const [bio, setBio] = useState('');
+    const [avatarFile, setAvatarFile] = useState<File | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     if (!isOpen) return null;
@@ -21,12 +26,21 @@ export const TeamModal: React.FC<TeamModalProps> = ({ project, isOpen, onClose, 
         setError(null);
 
         try {
-            await addMemberToProject(project.id, email, role);
+            if (isNewUser) {
+                await addMemberToProject(project.id, email, role, name, password, bio, avatarFile);
+            } else {
+                await addMemberToProject(project.id, email, role);
+            }
             setEmail('');
+            setName('');
+            setPassword('');
+            setBio('');
+            setAvatarFile(null);
             setRole(Role.MEMBER);
+            setIsNewUser(false);
             onUpdate();
         } catch (err: any) {
-            setError(err.response?.data?.error || 'Failed to add member. User must be registered first.');
+            setError(err.response?.data?.error || 'Failed to add member.');
         }
     };
 
@@ -59,39 +73,118 @@ export const TeamModal: React.FC<TeamModalProps> = ({ project, isOpen, onClose, 
                 )}
 
                 <div className="mb-8">
-                    <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">Add New Member</h3>
-                    <form onSubmit={handleAddMember} className="flex gap-4 items-end">
-                        <div className="flex-1">
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                                Email (user must be registered)
-                            </label>
-                            <input
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                                placeholder="user@example.com"
-                                required
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Add Member</h3>
+                        <label className="flex items-center space-x-2 text-sm text-gray-700 dark:text-gray-300">
+                            <input 
+                                type="checkbox" 
+                                checked={isNewUser} 
+                                onChange={(e) => setIsNewUser(e.target.checked)}
+                                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                             />
+                            <span>Register new user</span>
+                        </label>
+                    </div>
+                    <form onSubmit={handleAddMember} className="flex flex-col gap-4">
+                        <div className="flex gap-4 items-end">
+                            <div className="flex-1">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Email
+                                </label>
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    placeholder="user@example.com"
+                                    required
+                                />
+                            </div>
+                            <div className="w-32">
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role</label>
+                                <select
+                                    value={role}
+                                    onChange={(e) => setRole(e.target.value as Role)}
+                                    className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                >
+                                    {Object.values(Role).map((r) => (
+                                        <option key={r} value={r}>{r}</option>
+                                    ))}
+                                </select>
+                            </div>
                         </div>
-                        <div className="w-32">
-                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Role</label>
-                            <select
-                                value={role}
-                                onChange={(e) => setRole(e.target.value as Role)}
-                                className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                        
+                        {isNewUser && (
+                            <div className="flex flex-col gap-4">
+                                <div className="flex gap-4 items-end">
+                                    <div className="flex-1">
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                            Display Name
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={name}
+                                            onChange={(e) => setName(e.target.value)}
+                                            className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                            placeholder="John Doe"
+                                            required={isNewUser}
+                                        />
+                                    </div>
+                                    <div className="flex-1">
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                            Password
+                                        </label>
+                                        <input
+                                            type="password"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                            placeholder="••••••••"
+                                            required={isNewUser}
+                                            minLength={6}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex gap-4 items-end">
+                                    <div className="flex-1">
+                                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                            Avatar or Upload Image
+                                        </label>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={(e) => {
+                                                if (e.target.files && e.target.files.length > 0) {
+                                                    setAvatarFile(e.target.files[0]);
+                                                }
+                                            }}
+                                            className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white file:mr-4 file:py-1 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-gray-600 dark:file:text-gray-200"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex-1">
+                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        Bio Info
+                                    </label>
+                                    <textarea
+                                        value={bio}
+                                        onChange={(e) => setBio(e.target.value)}
+                                        className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                        placeholder="A short bio..."
+                                        rows={2}
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="flex justify-end mt-2">
+                            <button
+                                type="submit"
+                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                             >
-                                {Object.values(Role).map((r) => (
-                                    <option key={r} value={r}>{r}</option>
-                                ))}
-                            </select>
+                                Add Member
+                            </button>
                         </div>
-                        <button
-                            type="submit"
-                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                        >
-                            Add
-                        </button>
                     </form>
                 </div>
 

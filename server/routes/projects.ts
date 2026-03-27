@@ -1,9 +1,30 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticateToken, AuthRequest } from '../middleware/auth.js';
+import bcrypt from 'bcryptjs';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 
 const router = express.Router();
 const prisma = new PrismaClient();
+const uploadDir = process.env.UPLOADS_DIR || 'uploads';
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        if (!fs.existsSync(uploadDir)) {
+            fs.mkdirSync(uploadDir, { recursive: true });
+        }
+        cb(null, uploadDir);
+    },
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({ storage: storage });
 
 function getParam(value: string | string[] | undefined) {
     return Array.isArray(value) ? value[0] : value || '';
@@ -230,15 +251,48 @@ router.delete('/:id', authenticateToken, async (req: AuthRequest, res) => {
 });
 
 // Add member
-router.post('/:id/members', authenticateToken, async (req: AuthRequest, res) => {
+router.post('/:id/members', authenticateToken, upload.single('avatar'), async (req: AuthRequest, res) => {
     try {
-        const { email, role } = req.body;
+        const { email, role, name, password, bio } = req.body;
         const projectId = getParam(req.params.id);
 
         // Find user by email
-        const userToAdd = await prisma.user.findUnique({ where: { email } });
+        let userToAdd = await prisma.user.findUnique({ where: { email } });
         if (!userToAdd) {
-            return res.status(404).json({ error: 'User not found' });
+            if (name && password) {
+                const hashedPassword = await bcrypt.hash(password, 10);
+                
+                let avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(name.trim())}&background=random`;
+                if (req.file) {
+                    avatarUrl = `/uploads/${req.file.filename}`;
+                }
+
+                userToAdd = await prisma.user.create({
+                    data: {
+                        email: email.toLowerCase(),
+                        password: hashedPassword,
+                        name: name.trim(),
+                        bio: bio ? bio.trim() : null,
+                        avatarUrl,
+                    }
+                });
+            } else {
+                return res.status(404).json({ error: 'User not found. Please provide name and password to register a new user.' });
+            }
+        }
+
+        // Check if member already exists
+        const existingMember = await prisma.teamMember.findUnique({
+            where: {
+                userId_projectId: {
+                    userId: userToAdd.id,
+                    projectId
+                }
+            }
+        });
+
+        if (existingMember) {
+            return res.status(400).json({ error: 'User is already a member of this project' });
         }
 
         const member = await prisma.teamMember.create({
@@ -254,6 +308,7 @@ router.post('/:id/members', authenticateToken, async (req: AuthRequest, res) => 
 
         res.json(member);
     } catch (error) {
+        console.error('Failed to add member:', error);
         res.status(500).json({ error: 'Failed to add member' });
     }
 });

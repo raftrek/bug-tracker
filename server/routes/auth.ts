@@ -110,7 +110,7 @@ router.get('/me', async (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        res.json({ id: user.id, name: user.name, email: user.email, avatarUrl: user.avatarUrl });
+        res.json({ id: user.id, name: user.name, email: user.email, avatarUrl: user.avatarUrl, bio: user.bio });
     } catch (error) {
         res.status(401).json({ error: 'Invalid token' });
     }
@@ -125,7 +125,7 @@ router.put('/me', upload.single('avatar'), async (req, res) => {
         }
 
         const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
-        const { name, avatarUrl } = req.body;
+        const { name, avatarUrl, bio } = req.body;
         let finalAvatarUrl = avatarUrl;
 
         if (req.file) {
@@ -135,10 +135,10 @@ router.put('/me', upload.single('avatar'), async (req, res) => {
 
         const user = await prisma.user.update({
             where: { id: decoded.userId },
-            data: { name, avatarUrl: finalAvatarUrl },
+            data: { name, avatarUrl: finalAvatarUrl, bio },
         });
 
-        res.json({ id: user.id, name: user.name, email: user.email, avatarUrl: user.avatarUrl });
+        res.json({ id: user.id, name: user.name, email: user.email, avatarUrl: user.avatarUrl, bio: user.bio });
     } catch (error) {
         console.error('Update profile error:', error);
         res.status(500).json({ error: 'Failed to update profile' });

@@ -11,7 +11,6 @@ import { useAuth } from '../context/AuthContext';
 import { ListView } from '../components/ListView';
 import {
   getProjectById,
-  getProjectIssues,
   createIssue,
   updateIssue,
   createComment,
@@ -255,6 +254,12 @@ const ProjectBoardPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-primary-600 dark:text-primary-400">{project?.name || 'Project Board'}</h1>
           <div className="flex items-center gap-3">
             <ThemeToggle />
+            <Link
+              to={`/projects/${projectId}/edit`}
+              className="px-4 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600 transition-colors text-sm font-medium"
+            >
+              Edit Project
+            </Link>
             <button
               onClick={() => setIsTeamModalOpen(true)}
               className="px-4 py-2 rounded-lg bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-200 dark:hover:bg-neutral-600 transition-colors text-sm font-medium"
@@ -350,6 +355,8 @@ const ProjectBoardPage: React.FC = () => {
             onUpdateIssue={handleUpdateIssue}
             allIssues={issues}
             allTags={availableTags}
+            teamMembers={project?.members}
+            currentUser={currentUser}
           />
         )}
       </main>

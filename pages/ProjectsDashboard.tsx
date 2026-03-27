@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getProjects, updateProject, deleteProject } from '../services/projectService';
 import { Project, ProjectStatus } from '../types';
-import { AddIcon, KanbanIcon, SettingsIcon, ArchiveIcon, TrashIcon } from '../components/icons';
+import { AddIcon, KanbanIcon, SettingsIcon, ArchiveIcon, TrashIcon, PencilIcon } from '../components/icons';
 import { ThemeToggle } from '../components/ThemeToggle';
 
 const StatusBadge: React.FC<{ status: ProjectStatus }> = ({ status }) => {
@@ -148,6 +148,16 @@ export const ProjectsDashboard: React.FC = () => {
                     >
                       <KanbanIcon className="w-4 h-4" />
                       Open Board
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/projects/${p.id}/edit`);
+                      }}
+                      className="flex items-center justify-center p-1.5 rounded-lg transition-colors bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-600"
+                      title="Edit Project"
+                    >
+                      <PencilIcon className="w-4 h-4" />
                     </button>
                     <button
                       onClick={(e) => handleArchive(e, p)}

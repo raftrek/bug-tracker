@@ -18,6 +18,15 @@ function parseJsonField(value: string | null) {
     }
 }
 
+function parseJsonObject(value: string | null) {
+    if (!value) return {};
+    try {
+        return JSON.parse(value);
+    } catch {
+        return {};
+    }
+}
+
 // Helper to format issue response
 function formatIssue(issue: any) {
     return {
@@ -41,6 +50,14 @@ function formatIssue(issue: any) {
     };
 }
 
+function formatProject(project: any) {
+    return {
+        ...project,
+        config: parseJsonObject(project.config),
+        issues: project.issues ? project.issues.map(formatIssue) : undefined
+    };
+}
+
 // Get all projects (that user is a member of)
 router.get('/', authenticateToken, async (req: AuthRequest, res) => {
     try {
@@ -60,7 +77,7 @@ router.get('/', authenticateToken, async (req: AuthRequest, res) => {
                 }
             }
         });
-        res.json(projects);
+        res.json(projects.map(formatProject));
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch projects' });
     }
@@ -69,13 +86,14 @@ router.get('/', authenticateToken, async (req: AuthRequest, res) => {
 // Create project
 router.post('/', authenticateToken, async (req: AuthRequest, res) => {
     try {
-        const { name, description, status, requiresAuth } = req.body;
+        const { name, description, status, requiresAuth, config } = req.body;
         const project = await prisma.project.create({
             data: {
                 name,
                 description,
                 status: status || 'Active',
                 requiresAuth: requiresAuth || false,
+                config: config !== undefined ? JSON.stringify(config) : undefined,
                 members: {
                     create: {
                         userId: req.userId!,
@@ -91,7 +109,7 @@ router.post('/', authenticateToken, async (req: AuthRequest, res) => {
                 }
             }
         });
-        res.json(project);
+        res.json(formatProject(project));
     } catch (error) {
         res.status(500).json({ error: 'Failed to create project' });
     }
@@ -132,13 +150,7 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res) => {
             return res.status(403).json({ error: 'Access denied' });
         }
 
-        // Format issues
-        const formattedProject = {
-            ...project,
-            issues: project.issues.map(formatIssue)
-        };
-
-        res.json(formattedProject);
+        res.json(formatProject(project));
     } catch (error) {
         res.status(500).json({ error: 'Failed to fetch project' });
     }
@@ -148,7 +160,7 @@ router.get('/:id', authenticateToken, async (req: AuthRequest, res) => {
 router.put('/:id', authenticateToken, async (req: AuthRequest, res) => {
     try {
         const projectId = getParam(req.params.id);
-        const { name, description, status, requiresAuth } = req.body;
+        const { name, description, status, requiresAuth, config } = req.body;
         
         // Check if user is admin of this project
         const member = await prisma.teamMember.findFirst({
@@ -169,7 +181,8 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res) => {
                 name,
                 description,
                 status,
-                requiresAuth
+                requiresAuth,
+                config: config !== undefined ? JSON.stringify(config) : undefined
             },
             include: {
                 members: {
@@ -179,7 +192,7 @@ router.put('/:id', authenticateToken, async (req: AuthRequest, res) => {
                 }
             }
         });
-        res.json(project);
+        res.json(formatProject(project));
     } catch (error) {
         res.status(500).json({ error: 'Failed to update project' });
     }

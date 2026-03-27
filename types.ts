@@ -126,4 +126,5 @@ export interface Project {
   attachments?: Attachment[];
   config?: ProjectConfig;
   members?: TeamMember[];
+  issues?: Issue[];
 }

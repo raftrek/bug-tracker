@@ -8,9 +8,11 @@ interface ListViewProps {
   onUpdateIssue: (issueId: string, updatedValues: Partial<Omit<Issue, 'id'>>) => void;
   allIssues: Issue[];
   allTags: Tag[];
+  teamMembers?: any[];
+  currentUser?: any;
 }
 
-export const ListView: React.FC<ListViewProps> = ({ issues, onUpdateIssue, allIssues, allTags }) => {
+export const ListView: React.FC<ListViewProps> = ({ issues, onUpdateIssue, allIssues, allTags, teamMembers, currentUser }) => {
   const [sortConfig, setSortConfig] = useState<SortConfig>(null);
 
   const sortedIssues = useMemo(() => {
@@ -85,6 +87,8 @@ export const ListView: React.FC<ListViewProps> = ({ issues, onUpdateIssue, allIs
               onUpdateIssue={onUpdateIssue}
               allIssues={allIssues}
               allTags={allTags}
+              teamMembers={teamMembers}
+              currentUser={currentUser}
             />
           ))}
           {sortedIssues.length === 0 && (

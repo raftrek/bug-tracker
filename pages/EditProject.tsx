@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { createProject } from '../services/projectService';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { getProjectById, updateProject } from '../services/projectService';
 import { ProjectStatus } from '../types';
 import { AddIcon } from '../components/icons';
 
 type UploadItem = { name: string; type: string; size: number; url: string };
 
-export const NewProject: React.FC = () => {
+export const EditProject: React.FC = () => {
   const navigate = useNavigate();
+  const { projectId } = useParams<{ projectId: string }>();
+  
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<ProjectStatus>(ProjectStatus.ACTIVE);
@@ -15,23 +17,48 @@ export const NewProject: React.FC = () => {
   const [attachments, setAttachments] = useState<UploadItem[]>([]);
   const [config, setConfig] = useState<Record<string, unknown>>({ enableAI: true, defaultView: 'kanban' });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [createdProjectId, setCreatedProjectId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const processFiles = (files: FileList) => {
-    const newItems: UploadItem[] = Array.from(files).map((f) => ({
-      name: f.name,
-      type: f.type,
-      size: f.size,
-      url: URL.createObjectURL(f),
-    }));
-    setAttachments((prev) => [...prev, ...newItems]);
-  };
+  useEffect(() => {
+    const loadProject = async () => {
+      if (!projectId) return;
+      try {
+        const proj = await getProjectById(projectId);
+        if (proj) {
+          setName(proj.name);
+          setDescription(proj.description || '');
+          setStatus(proj.status as ProjectStatus);
+          setRequiresAuth(proj.requiresAuth || false);
+          if (proj.config) {
+            setConfig(proj.config as Record<string, unknown>);
+          }
+        } else {
+          setError('Project not found');
+        }
+      } catch (err) {
+        setError('Failed to load project details.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadProject();
+  }, [projectId]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
-      processFiles(e.target.files);
+    if (e.target.files) {
+      const filesArray = Array.from(e.target.files as FileList).map((file: File) => ({
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        url: URL.createObjectURL(file) // temporary local URL for preview
+      }));
+      setAttachments(prev => [...prev, ...filesArray]);
     }
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -41,26 +68,28 @@ export const NewProject: React.FC = () => {
       setError('Project name is required.');
       return;
     }
+    if (!projectId) return;
+    
     setIsSubmitting(true);
     try {
-      const proj = await createProject({ name, description, status, requiresAuth, attachments, config });
-      setCreatedProjectId(proj.id);
+      await updateProject(projectId, { name, description, status, requiresAuth, config });
+      navigate(`/board/${projectId}`);
     } catch (err) {
-      setError('Failed to create project. Please try again.');
+      setError('Failed to update project. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const openBoard = () => {
-    if (createdProjectId) navigate(`/board/${createdProjectId}`);
-  };
+  if (isLoading) {
+    return <div className="p-6 text-center">Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen bg-neutral-100 text-neutral-800">
       <header className="bg-white shadow-sm p-4 sticky top-0 z-20">
         <div className="container mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-primary-600">New Project</h1>
+          <h1 className="text-2xl font-bold text-primary-600">Edit Project</h1>
           <button
             onClick={() => navigate(-1)}
             className="px-4 py-2 rounded-lg bg-neutral-200 text-neutral-800 hover:bg-neutral-300 transition-colors text-sm font-medium"
@@ -166,7 +195,7 @@ export const NewProject: React.FC = () => {
                 className={`flex items-center gap-2 bg-primary-500 text-white font-semibold px-4 py-2 rounded-lg transition-colors ${isSubmitting ? 'opacity-70 cursor-not-allowed' : 'hover:bg-primary-600'}`}
               >
                 <AddIcon />
-                Create Project
+                Update Project
               </button>
               <button
                 type="button"
@@ -175,16 +204,6 @@ export const NewProject: React.FC = () => {
               >
                 Cancel
               </button>
-              {createdProjectId && (
-                <button
-                  type="button"
-                  onClick={openBoard}
-                  className="px-4 py-2 rounded-lg bg-neutral-200 text-neutral-800 hover:bg-neutral-300"
-                  title="Redirect to Project Board"
-                >
-                  Open in Project Board
-                </button>
-              )}
             </div>
           </form>
         </div>
@@ -193,4 +212,4 @@ export const NewProject: React.FC = () => {
   );
 };
 
-export default NewProject;
+export default EditProject;

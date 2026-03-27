@@ -32,6 +32,7 @@ export async function updateProject(id: string, input: Partial<{
   description: string;
   status: ProjectStatus;
   requiresAuth: boolean;
+  config: Record<string, unknown>;
 }>): Promise<Project> {
   const response = await api.put(`/projects/${id}`, input);
   return response.data;

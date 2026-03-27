@@ -1,14 +1,17 @@
 import React, { useState, useMemo } from 'react';
-import type { Issue, Tag } from '../types';
+import type { Issue, Tag, TeamMember, User } from '../types';
 import { Priority, Status } from '../types';
-import { PencilIcon } from './icons';
+import { PencilIcon, MaximizeIcon } from './icons';
 import { TagInput } from './TagInput';
+import { FullEditModal } from './FullEditModal';
 
 interface IssueRowProps {
   issue: Issue;
   onUpdateIssue: (issueId: string, updatedValues: Partial<Omit<Issue, 'id'>>) => void;
   allIssues: Issue[];
   allTags: Tag[];
+  teamMembers?: TeamMember[];
+  currentUser?: User | null;
 }
 
 const PriorityIndicator: React.FC<{ priority: Priority }> = ({ priority }) => {
@@ -37,8 +40,9 @@ const StatusPill: React.FC<{ status: Status }> = ({ status }) => {
   return <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${style.color}`}>{style.text}</span>;
 }
 
-export const IssueRow: React.FC<IssueRowProps> = ({ issue, onUpdateIssue, allIssues, allTags }) => {
+export const IssueRow: React.FC<IssueRowProps> = ({ issue, onUpdateIssue, allIssues, allTags, teamMembers, currentUser }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [isFullEditing, setIsFullEditing] = useState(false);
   const [editFormData, setEditFormData] = useState(issue);
 
   const availableDependencies = useMemo(() => {
@@ -175,10 +179,24 @@ export const IssueRow: React.FC<IssueRowProps> = ({ issue, onUpdateIssue, allIss
       </td>
       <td className="px-4 py-3 text-sm text-neutral-500 dark:text-neutral-400 whitespace-nowrap">{formatDate(issue.updatedAt)}</td>
       <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
-        <button onClick={handleStartEditing} className="text-primary-600 hover:text-primary-800 p-1">
+        <button onClick={handleStartEditing} className="text-primary-600 hover:text-primary-800 p-1" title="Quick Edit">
           <PencilIcon className="w-5 h-5" />
         </button>
+        <button onClick={() => setIsFullEditing(true)} className="text-neutral-600 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200 p-1 ml-1" title="Full Edit">
+          <MaximizeIcon className="w-5 h-5" />
+        </button>
       </td>
+      {isFullEditing && (
+        <FullEditModal
+          issue={issue}
+          allIssues={allIssues}
+          allTags={allTags}
+          teamMembers={teamMembers}
+          currentUser={currentUser}
+          onUpdateIssue={onUpdateIssue}
+          onClose={() => setIsFullEditing(false)}
+        />
+      )}
     </tr>
   );
 };

@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import ProjectsDashboard from './pages/ProjectsDashboard';
 import NewProject from './pages/NewProject';
+import EditProject from './pages/EditProject';
 import ProjectBoardPage from './pages/ProjectBoard';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -44,6 +45,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <NewProject />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/projects/:projectId/edit"
+            element={
+              <ProtectedRoute>
+                <EditProject />
               </ProtectedRoute>
             }
           />
